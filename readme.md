@@ -6,7 +6,7 @@
 ## Requirements
 
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 git clone <repo-url>
@@ -24,7 +24,7 @@ OFFTARGET_COLUMN (OTS sequence), CHROM_COLUMN (chromosome of the OTS), START_COL
 END_COLUMN (end position of the OTS), BINARY_LABEL_COLUMN (1/0 label for the OTS), REGRESSION_LABEL_COLUMN.
 
 **To set these spesific columns values one should set the ```Columns_dict``` values in Jsons\Data_columns_and_paths.json**
-- if the sgRNA allignment has no alternations from the original sgRNA was can set the values in REALIGNED_COLUMN to TARGET_COLUMN.
+- if the sgRNA allignment has no alternations from the original sgRNA one can set the values in REALIGNED_COLUMN to TARGET_COLUMN.
 
 ### Epigenetic data
 When training a model with sequence and epigenetic data the script assumes the epigenetic data is given in the off-target dataset csv file,
@@ -80,52 +80,52 @@ This file can be altered by the user to train/test/evaluate different model arch
 
 ---
 
-## 🧠 Models
+## Models
 ---
-## Sequence Models
-
-### Only Sequence Model
-
+### Only sequence model
 Set `features_method = 1` in `Args.txt`
-
-### Sequence + Features
-
+### Sequence + features
 Set `features_method = 2`
+
 Set `--features_columns` to a valid path, e.g.:
 
   * `Jsons/feature_columns_dict_change_seq.json`
   * For HSPC testing: `Jsons/feature_columns_dict_hspc.json`
 
-> ⚠️ Make sure feature names in the JSON file match the column names in corresponding dataset.
+> ⚠️ Make sure feature names in the JSON file match the column names in corresponding off-target dataset.
 
 ---
 ### Training
 
-By defualt training a new model will trains on the 78 GUIDE-seq experiments from the CHANGE-seq study.
+By defualt training a new model will train on the 78 GUIDE-seq experiments from the CHANGE-seq study.
 
 **To change the training data change the `"Vivo-silico"` dataset path in Jsons/Data_columns_and_paths.json**
 
 **To exclude spesific sgRNAs and their OTSs from the training data: set the `--exclude_guides` Arg in the 'Args.txt' file.**
-- To train a model make sure to set the `--job` arg to `train`
+- To train a model make sure to set the `--job` arg to `"train"`
 
-#### Ensemble Training - train n ensemble with m models
+#### Ensemble training - train n ensemble with m models
 To train an esnemble set `--cross_val` to `3`
 * Defaults: 10 ensembles × 50 models
-**To change the number of ensembles and model one should change the defualts in `parsing.py` module**
+  
+**To change the number of ensembles and models, one should change the defualts in the `parsing.py` module**
 
-#### K-Fold Training - train a model on each partition
-To train k-fold model Set `--cross_val` to `2`
+#### K-Fold training - train a model on each partition
+To train k-fold modela set `--cross_val` to `2`
 * Do **not** provide `--exclude_guides` or `--test_on_other_data`
-**The partitions are listed in Data_sets/Train_guides and Data_sets/Test_guides. Each Train_k.txt is a list of SUBSET sgRNAs from the CHANGE-seq sgRNAs to train on**
+  
+**The partitions are listed in Data_sets/Train_guides and Data_sets/Test_guides. Each Train_k.txt is a list of SUBSET sgRNAs from the CHANGE-seq sgRNAs to train on.
+The script will train a model on these sgRNAs and their OTSs**
 
 #### Saving trained models
 By defualt the trained models are saved for further used, the path constructed in the following way:
+
 `Models/<Exclude_guides>/Model_name/Cross-validation/Feature_type/<cross_val_params>/<Feature_description>/model.keras`
 
-* **K-Cross Example:**
+* **K-Cross example:**
   `Models/GRU-EMB/K_cross/Only_sequence/(k').keras`
 
-* **Ensemble Example:**
+* **Ensemble example:**
   `Models/Exclude_Refined_TrueOT/GRU-EMB/Ensemble/With_features_by_columns/10_ensembels/50_models/Binary_epigenetics/H3K27me3/ensemble_(n)/model_(m).keras`
 
 > ⚠️ ENSEMBLE training takes a lot of storage and running time:
@@ -140,7 +140,7 @@ By defualt the predictions are saved for further evaluation.
 #### Ensemble Testing
 set `--cross_val` to `3`
 
-**To test the trained ensemble on another dataset the `--test_on_other_data` arg must be provided, if not given, the ensemble is evaluated on training data in the `"vivo_silico"` path in Jsons/Data_columns_and_paths.json.**
+**To test the trained ensemble on another dataset the `--test_on_other_data` arg must be provided, if not given, the ensemble is evaluated on the training data in the `"vivo_silico"` path in Jsons/Data_columns_and_paths.json.**
 
 * Saves: `ensemble_(m).pkl` containing average predictions of all m models for that ensemble.
   (Originally saved all 50 model predictions, now only average due to storage)
@@ -156,19 +156,22 @@ Set `--cross_val` to `2`
 By defualt the predictions are saved for further used, the path constructed in the following way:
 `ML_results/<exclude_guides>/<on_dataset>/Model_name/Cross-validation/Feature_type/<cross_val_params>/<Feature_description>/<model_number>.pkl`
 
-* **K-Cross Example:**
+* **K-Cross example:**
   `ML_results/GRU-EMB/K_cross/With_features_by_columns/Feature_name/raw_scores.pkl`
 
-* **Ensemble Example:**
+* **Ensemble example:**
   `ML_results/Exclude_Refined_TrueOT/on_Refined_TrueOT_shapiro_park/GRU-EMB/Ensemble/With_features_by_columns/10_ensembels/50_models/Binary_epigenetics/H3K27me3/Scores/ensemble_m.pkl`
 
 ---
 
 ### Evaluation
 Evaluates AUROC, AUPRC, and other metrics based on the scores.pkl prediction files.
+
+Each evlaution will have a .pkl file saved for further ploting and .csv file for human readable inspection.
+
 Set `--job` arg to `evaluation`
 
-#### Ensemble Evaluation
+#### Ensemble evaluation
 Set `--cross_val` to `3`
 * Evaluates each ensemble `.pkl` score file
 * Saves:
@@ -177,22 +180,22 @@ Set `--cross_val` to `3`
   * `mean_std.pkl`, `mean_std.csv`
   * `p_val.pkl`, `p_val.csv` (used in `Figures/ROC_PR_figs.py`)
 
-#### K-Cross Evaluation
+#### K-Cross evaluation
 Set `--cross_val` to `2`
 * Saves:
 
-  * `results_summary.xlsx`: Partition-wise metrics (in `Plots/GRU-EMB/K_cross/All_partitions`)
+  * `results_summary.xlsx`: Each sheet for different metric (in `Plots/GRU-EMB/K_cross/All_partitions`)
   * `averaged_results.csv`, `p_vals.csv`: Averaged metrics + significance test
   * AUROC/AUPRC plots (in `Figures/`)
 
-> 📌 *P-values from Wilcoxon rank-sum test comparing "only sequence" to features*
+>  *P-values from Wilcoxon rank-sum test comparing "only sequence" to features*
 
 ---
 
 
 ## Interpretation
 
-To interpret the **All-epigenetic model** trained on 72 GUIDE-seq experiments:
+To interpret the **All-epigenetic model** trained on the 72 GUIDE-seq experiments:
 
 ```bash
 python interpertation.py
