@@ -15,8 +15,29 @@ python main.py --argfile "Args.txt"
 ```
 
 ---
+## Data
 
-## 📄 `Args.txt` Configuration File
+### Off-target data
+The off-target sites (OTSs) the model will be trained on should have the following columns:
+BULGES_COLUMN, MISMATCH_COLUMN, TARGET_COLUMN (sgRNA sequence), REALIGNED_COLUMN (sgRNA with bulges if), 
+OFFTARGET_COLUMN (OTS sequence), CHROM_COLUMN (chromosome of the OTS), START_COLUMN (start position of the OTS)
+END_COLUMN (end position of the OTS), BINARY_LABEL_COLUMN (1/0 label for the OTS), REGRESSION_LABEL_COLUMN.
+
+**To set these spesific columns values one should set the ```Columns_dict``` values in Jsons\Data_columns_and_paths.json**
+- if the sgRNA allignment has no alternations from the original sgRNA was can set the values in REALIGNED_COLUMN to TARGET_COLUMN.
+
+### Epigenetic data
+When training a model with sequence and epigenetic data the script assumes the epigenetic data is given in the off-target dataset csv file,
+i.e, each epigenetic feature has a column with values for that OTS. 
+Further explantion of how to train each type of model is below.
+
+**To assign new epigenetic values to an OT dataset one should follow these steps:**
+1. Have a valid bed formated epigenetic data: chromosome \t start \t end (at least).
+2. Run the ```run_intersection``` function in the ```Data_labeling_and_processing.py``` script with paths to the off-target data, folder containing the wanted epigenetic data and list of the ["chrom","chrom_start","chrom_end"] columns in the OT data. The function will output a new off-target data: ```_withEpigenetic.csv``` with the intersection values.
+
+## Model training, testing and evaluating:
+
+## The `Args.txt` configuration file
 
 This file can be altered by the user to train/test/evaluate different model architectures and inputs.
 
@@ -58,54 +79,48 @@ This file can be altered by the user to train/test/evaluate different model arch
 📁 *Examples can be found in the `Args_examples` folder.*
 
 ---
-## Data
-
-### Off-target data
-The off-target sites (OTSs) the model will be trained on should have the following columns:
-BULGES_COLUMN, MISMATCH_COLUMN, TARGET_COLUMN (sgRNA sequence), REALIGNED_COLUMN (sgRNA with bulges if), 
-OFFTARGET_COLUMN (OTS sequence), CHROM_COLUMN (chromosome of the OTS), START_COLUMN (start position of the OTS)
-END_COLUMN (end position of the OTS), BINARY_LABEL_COLUMN (1/0 label for the OTS), REGRESSION_LABEL_COLUMN.
-
-**To set these spesific columns values one should set the ```Columns_dict``` values in Jsons\Data_columns_and_paths.json**
-- if the sgRNA allignment has no alternations from the original sgRNA was can set the values in REALIGNED_COLUMN to TARGET_COLUMN.
-
-### Epigenetic data
-When training a model with sequence and epigenetic data the script assumes the epigenetic data is given in the off-target dataset csv file,
-i.e, each epigenetic feature has a column with values for that OTS. 
-Further explantion of how to train each type of model is below.
-**To assign new epigenetic values to an OT dataset one should follow these steps:**
-1. Have a valid bed formated epigenetic data: chromosome \t start \t end (at least).
-2. Make sure the CHROM_COLUMN, START_COLUMN and END_COLUMN in the OT data are positioned first in this order.
-3. Make sure the start and end coordiantes are ints.
-4. Run the ```run_intersection``` function in the ```Data_labeling_and_processing.py``` script with paths to the off-target data and folder containing the wanted epigenetic data. The function will output a new off-target data: ```_withEpigenetic.csv``` with the intersection values.
-
 
 ## 🧠 Models
+---
+## Sequence Models
 
-### 🔧 Training
+### Only Sequence Model
+
+Set `features_method = 1` in `Args.txt`
+
+### Sequence + Features
+
+Set `features_method = 2`
+Set `--features_columns` to a valid path, e.g.:
+
+  * `Jsons/feature_columns_dict_change_seq.json`
+  * For HSPC testing: `Jsons/feature_columns_dict_hspc.json`
+
+> ⚠️ Make sure feature names in the JSON file match the column names in corresponding dataset.
+
+---
+### Training
 
 By defualt training a new model will trains on the 78 GUIDE-seq experiments from the CHANGE-seq study.
 
 **To change the training data change the `"Vivo-silico"` dataset path in Jsons/Data_columns_and_paths.json**
 
-**To exclude spesific sgRNAS and their OTSs from the training data: set the `--exclude_guides` Arg in the 'Args.txt' file.**
+**To exclude spesific sgRNAs and their OTSs from the training data: set the `--exclude_guides` Arg in the 'Args.txt' file.**
 - To train a model make sure to set the `--job` arg to `train`
 
-#### ✅ Ensemble Training
-
+#### Ensemble Training - train n ensemble with m models
+To train an esnemble set `--cross_val` to `3`
 * Defaults: 10 ensembles × 50 models
-* Set `--cross_val` to `3`
-* Excludes guides via `--exclude_guides`
-* Training on the 78 GUIDE-seq experiments
-* To change the training data, modify `"Vivo-silico"` path in `Jsons/Data_columns_and_paths.json`
+**To change the number of ensembles and model one should change the defualts in `parsing.py` module**
 
-#### ✅ K-Fold Training
-
-* Set `--cross_val` to `2`
+#### K-Fold Training - train a model on each partition
+To train k-fold model Set `--cross_val` to `2`
 * Do **not** provide `--exclude_guides` or `--test_on_other_data`
-* Internally uses 10 `train_guides.txt` files from `Data_sets/train_guides`
+**The partitions are listed in Data_sets/Train_guides and Data_sets/Test_guides. Each Train_k.txt is a list of SUBSET sgRNAs from the CHANGE-seq sgRNAs to train on**
 
-#### 📦 Saved Trained Models
+#### Saving trained models
+By defualt the trained models are saved for further used, the path constructed in the following way:
+`Models/<Exclude_guides>/Model_name/Cross-validation/Feature_type/<cross_val_params>/<Feature_description>/model.keras`
 
 * **K-Cross Example:**
   `Models/GRU-EMB/K_cross/Only_sequence/(k').keras`
@@ -113,33 +128,33 @@ By defualt training a new model will trains on the 78 GUIDE-seq experiments from
 * **Ensemble Example:**
   `Models/Exclude_Refined_TrueOT/GRU-EMB/Ensemble/With_features_by_columns/10_ensembels/50_models/Binary_epigenetics/H3K27me3/ensemble_(n)/model_(m).keras`
 
-> ⚠️ ENSEMBLE:
+> ⚠️ ENSEMBLE training takes a lot of storage and running time:
 > 8 individual features + 2 combinations + only sequence = 11 models
-> 11 × 10 ensembles × 50 models = **5500 models**
-> 🧠 Training takes time and \~14GB storage.
-
+> 11 × 10 ensembles × 50 models = **5500 models** ~14GB storage.
 ---
 
-### 🧪 Testing
+### Model prediction
+Do predict a trained model set `--job` arg to  `"test"`.
+By defualt the predictions are saved for further evaluation.
 
-Use: `--job test`
+#### Ensemble Testing
+set `--cross_val` to `3`
 
-Saves models predictions
+**To test the trained ensemble on another dataset the `--test_on_other_data` arg must be provided, if not given, the ensemble is evaluated on training data in the `"vivo_silico"` path in Jsons/Data_columns_and_paths.json.**
 
-#### ✅ Ensemble Testing
-
-* `--test_on_other_data` **must** be provided
-* If not given, ensemble is evaluated on training data
-* Saves: `ensemble_(m).pkl` containing average predictions
+* Saves: `ensemble_(m).pkl` containing average predictions of all m models for that ensemble.
   (Originally saved all 50 model predictions, now only average due to storage)
 
-#### ✅ K-Cross Testing
+#### K-Cross Testing
+Set `--cross_val` to `2`
+- Do **not** provide `--exclude_guides` or `--test_on_other_data`
 
-* Set `--cross_val` to `2`
-* Do **not** provide `--exclude_guides` or `--test_on_other_data`
-* Internally uses 10 `test_guides.txt` from `Data_sets/test_guides`
+***Each saved model model_{partitionK}.keras will predict the matching test_guides_k_partition.txt in the Data_sets/Test_guides folder**
 
-#### 📂 Test Output Paths
+
+#### Predictions output paths 
+By defualt the predictions are saved for further used, the path constructed in the following way:
+`ML_results/<exclude_guides>/<on_dataset>/Model_name/Cross-validation/Feature_type/<cross_val_params>/<Feature_description>/<model_number>.pkl`
 
 * **K-Cross Example:**
   `ML_results/GRU-EMB/K_cross/With_features_by_columns/Feature_name/raw_scores.pkl`
@@ -149,24 +164,21 @@ Saves models predictions
 
 ---
 
-### 📈 Evaluation
+### Evaluation
+Evaluates AUROC, AUPRC, and other metrics based on the scores.pkl prediction files.
+Set `--job` arg to `evaluation`
 
-Evaluates AUROC, AUPRC, and other metrics.
-Use: `--job evaluation`
-
-#### ✅ Ensemble Evaluation
-
-* Set `--cross_val` to `3`
+#### Ensemble Evaluation
+Set `--cross_val` to `3`
 * Evaluates each ensemble `.pkl` score file
 * Saves:
-
+  
   * `all_features.pkl`: Dictionary with feature → \[ensemble\_n, metric values]
   * `mean_std.pkl`, `mean_std.csv`
   * `p_val.pkl`, `p_val.csv` (used in `Figures/ROC_PR_figs.py`)
 
-#### ✅ K-Cross Evaluation
-
-* Set `--cross_val` to `2`
+#### K-Cross Evaluation
+Set `--cross_val` to `2`
 * Saves:
 
   * `results_summary.xlsx`: Partition-wise metrics (in `Plots/GRU-EMB/K_cross/All_partitions`)
@@ -177,25 +189,8 @@ Use: `--job evaluation`
 
 ---
 
-## 🧬 Sequence Models
 
-### 🔹 Only Sequence Model
-
-* Set `features_method = 1` in `Args.txt`
-
-### 🔹 Sequence + Features
-
-* Set `features_method = 2`
-* Set `--features_columns` to a valid path, e.g.:
-
-  * `Jsons/feature_columns_dict_change_seq.json`
-  * For HSPC testing: `Jsons/feature_columns_dict_hspc.json`
-
-> ⚠️ Make sure feature names in the JSON file match the column names in corresponding dataset.
-
----
-
-## 🧠 Interpretation
+## Interpretation
 
 To interpret the **All-epigenetic model** trained on 72 GUIDE-seq experiments:
 
@@ -221,7 +216,8 @@ python Figures/EpiCRISPROff_interpertability_plot.py
 
 To create a **beeswarm plot** of epigenetic feature importances.
 
-```
+
+---
 
 ## Software
-
+We used the 
