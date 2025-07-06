@@ -58,15 +58,38 @@ This file can be altered by the user to train/test/evaluate different model arch
 📁 *Examples can be found in the `Args_examples` folder.*
 
 ---
+## Data
+
+### Off-target data
+The off-target sites (OTSs) the model will be trained on should have the following columns:
+BULGES_COLUMN, MISMATCH_COLUMN, TARGET_COLUMN (sgRNA sequence), REALIGNED_COLUMN (sgRNA with bulges if), 
+OFFTARGET_COLUMN (OTS sequence), CHROM_COLUMN (chromosome of the OTS), START_COLUMN (start position of the OTS)
+END_COLUMN (end position of the OTS), BINARY_LABEL_COLUMN (1/0 label for the OTS), REGRESSION_LABEL_COLUMN.
+
+**To set these spesific columns values one should set the ```Columns_dict``` values in Jsons\Data_columns_and_paths.json**
+- if the sgRNA allignment has no alternations from the original sgRNA was can set the values in REALIGNED_COLUMN to TARGET_COLUMN.
+
+### Epigenetic data
+When training a model with sequence and epigenetic data the script assumes the epigenetic data is given in the off-target dataset csv file,
+i.e, each epigenetic feature has a column with values for that OTS. 
+Further explantion of how to train each type of model is below.
+**To assign new epigenetic values to an OT dataset one should follow these steps:**
+1. Have a valid bed formated epigenetic data: chromosome \t start \t end (at least).
+2. Make sure the CHROM_COLUMN, START_COLUMN and END_COLUMN in the OT data are positioned first in this order.
+3. Make sure the start and end coordiantes are ints.
+4. Run the ```run_intersection``` function in the ```Data_labeling_and_processing.py``` script with paths to the off-target data and folder containing the wanted epigenetic data. The function will output a new off-target data: ```_withEpigenetic.csv``` with the intersection values.
+
 
 ## 🧠 Models
 
 ### 🔧 Training
 
-Trains models on the 78 GUIDE-seq experiments from the CHANGE-seq study.
+By defualt training a new model will trains on the 78 GUIDE-seq experiments from the CHANGE-seq study.
 
-If `--exclude_guides` is given, it will exclude these guides and their OTSs from the training data.
-Use: `--job train`
+**To change the training data change the `"Vivo-silico"` dataset path in Jsons/Data_columns_and_paths.json**
+
+**To exclude spesific sgRNAS and their OTSs from the training data: set the `--exclude_guides` Arg in the 'Args.txt' file.**
+- To train a model make sure to set the `--job` arg to `train`
 
 #### ✅ Ensemble Training
 
