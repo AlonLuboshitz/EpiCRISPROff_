@@ -10,6 +10,7 @@ from features_and_model_utilities import get_feature_name
 #from plotting import plot_subplots, sub_plot_shap_beeswarn, sub_plot_shap_bar_plot
 from train_and_test_utilities import keep_intersect_guides_indices
 from interpertation_utilities import *
+from features_engineering import extract_features
 #from plotting_utilities import return_colormap
 import seaborn as sns
 import signal
