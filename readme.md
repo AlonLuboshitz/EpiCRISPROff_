@@ -5,6 +5,9 @@
 
 ## Requirements
 
+## Zipped files and GIT LFS
+
+## Downloading the trained ensembles
 
 ## Quick Start
 
