@@ -1,0 +1,121 @@
+EpiCRISPROff is a....
+
+Requirements:
+
+To train/test/evaluate ensemble or a model just simply clone the repo and do the following:
+cd EpiCRISPROff
+python main.py --argfile "Args.txt"
+
+The "Args.txt" configuration file:
+
+This file can be altered by the user to train\test\evaluate different models architechtures and inputs.
+The arguments are:
+--model (int) 1-6: model types where 6 is the GRU-Embedding model.
+--cross_val (int) 2-3: 
+    2: k-cross validation.
+    3: Ensemble.
+--features_method (int) 1,2: What features to use when training/testing the model/ensemble.
+    1: Only sequence.
+    2: With features by columns.
+--features_columns (str): path to a json file containing keys as features description, values as list of features.
+--job (str): train, test, evaluation
+--exclude_guides (list): [path, str]: exlude sgRNAs from the bold(training) procedure.
+    path: sgRNAs csv file containing guide seqeuence. 
+    str: column name of the guides to exclude.
+--test_on_other_data (list): [path, str]: when testing on other data.
+    path: to a json file containing keys as data names and values as paths.
+    str: name of the data to test on, should match the keys in the json file.
+
+* examples can be found in the Args_examples folder.
+
+***Models:***
+
+**Training:** will create models trained on the 78 GUIDE-seq experiments from the CHANGE-seq study.
+if excluding guides are given, it will exclude these guides and their OTSs from the training data.
+note: --job train
+
+    *Ensemble_training:* by defualt inner arguments such as ensembel and model numbers are set to 10,50, respectively.
+    To alter these arguments change the defualts in the parsing.py module.
+    --cross_val should be set to 3. Each model in each ensemble will train on the 78 GUIDE-seq experiments, excluding sgRNAs given in the exlucde_guide argument. To change this behavoiur one should alter the "Vivo-silico" path in Jsons/Data_columns_and_paths.json.
+
+    10 cross validation training: set --cross_val to 2. do not give inputs of --exclude_guides, and --test_on_other_data, where it will exclude unnessery guides. 
+    NOTE: The 10 train_guides.txt files in Data_sets/train_guides will be used to train 10 different models for each feature.
+
+    Trained models are saved in the following way:
+    Models/name_of_guide_excluded (if excluded was set)/Model_name/Cross_val_type/Feature_type/Feature_name
+    Example_k_cross: Models/GRU-EMB/K_cross/Only_sequence/(k').keras
+    Example_ensemble: with n ensembles and m models - Models/Exclude_Refined_TrueOT/GRU-EMB/Ensemble/With_features_by_columns/10_ensembels/50_models/Binary_epigenetics/H3K27me3/ensemble_(n)/model_(m).keras
+
+    NOTE: ENSEMBLE: There are 8 individual features, 2 combinations and only sequence, 11 different models.
+                    each one has 10 ensemble * 50 models = 500 * 11 = 5500 models! 
+                    This takes a lot of training time, and 14 GB storage.
+
+Testing: When testing a trained model it will save the predictions of the trained model/ensebmle on given test data if given, togther with the corresponding labels, and indexes of the OTSs.
+note: --job test
+
+    Ensemble testing: test_on_other data should be given as the ensemble trains on all 78 experiments.
+    upper_case(If no test_on_other_data is given, the ensemble will be evaluated on the 78 training data!)
+    An ensemble_(m).pkl score file will be saved for each ensemble containing average predictions.
+    * Originall all 50 model predictions were saved for inspecting confindence. Due to storage room the average is saved.
+
+    k_cross_testing: set --cross_val to 2. do not give inputs of --exclude_guides, and --test_on_other_data. NOTE: The 10 test_guides.txt files in Data_sets/test_guides will be used to test the 10 corresponding trained models.
+
+    Tested models are saved in the following way:
+    Example_k_cross: ML_results/GRU-EMB/K_cross/With_features_by_columns/Feature_name/raw_scores.pkl
+    Example_ensemble: ML_results/Exclude_Refined_TrueOT/on_Refined_TrueOT_shapiro_park/GRU-EMB/Ensemble/With_features_by_columns/10_ensembels/50_models/Binary_epigenetics/H3K27me3/Scores/ensemble_m.pkl
+
+
+Evaluation: Evaluating model predictions, should be applied after running the testing procedure, i.e. training and testing. The evaluating script will evaluate the AUROC,AUPRC and other metric not mentioned:
+When eavluating --feature_method can be 2 or 1.
+
+    Ensemble evaluation: set --cross_val to 3.
+    each ensemble score pkl file will be evaluated and the AUROC,AUPRC will be calculated. 
+    the all_features.pkl file in Plots/Exclude_Refined_TrueOT/on_Refined_TrueOT_Lazzarroto/GRU-EMB/Ensemble/All_guides/10_ensembles/ will save a dictionary for feature: [ensemble_n, metric values]
+    another mean_std.pkl, mean_std.csv and p_val.pkl, p_val.csv are saved. 
+    The pkl files are used in ROC_PR_figs.py in /Figures.
+    The csv files are for human readble inspection.
+    
+    K-cross evaluation: set --cross_val to 2.
+    evaluating each partition AUPRC,AUROC and reporting:
+    in Plots/GRU-EMB/K_cross/All_partitions:
+    - results_summary.xlsx file with sheets as metrics, rows as partitions, and column as features for human readable inspection.
+    in Plots/GRU-EMB/K_cross/All_partitions/averaged_results
+    - averaged_results.csv file with the average partition results and stds.
+    - p_vals.csv file
+    NOTE: ALSO SAVES AUROC/AUPRC_k_cross_results figs in Figures.
+
+    *p-values obtained from wilxocon rank sum test comparing the only seqeuence to the features.
+     
+
+Training/Testing Only sequence model:
+in the "Args.txt" set features_method to 1. 
+
+Training/Testing with Features:
+To train/test a model/ensemble with features the following should be applied.
+in the "Args.txt" set features_method to 2.
+the --features_columns Jsons/feature_columns_dict_change_seq.json should be set.
+The feature names in the json file should match the column names in the datasets!
+THUS, WHEN TESTING A T-CELL MODEL ON HSPC DATASET, the feature_columns should be changed accoridnly to: Jsons/feature_columns_dict_hspc.json
+
+Interpertation:
+    To interpret the All-epigenetic model trained on the 72 GUIDE-seq experiments from the CHANGE-seq study RUN:
+    python interpertation.py
+
+    By defualt the first ensemble of the 50 models trained on all epigenetic features will be evaluated.
+    The output will be in save in: Plots/Interpertability/SHAP_values/all_guides.pkl
+    a SHAP object pkl file. To test a diffrenet ensemble change the path in the interpertation.py file.
+    Furthermore, if you want to interpret a model that trained on different features the features list in run_shap function
+    should be altered accordingly. 
+
+    you can run the EpiCRISPROff_interpertability_plot.py in Figures to create a beeswarn plot of the epigenetic features.
+    the pkl file is set to be interpreted.
+
+
+Software:
+
+
+
+
+
+
+
