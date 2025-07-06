@@ -1,6 +1,6 @@
 # EpiCRISPROff
 
-Hi! I'm your first Markdown file in **StackEdit**. If you want to learn about StackEdit, you can read me. If you want to play with Markdown, you can edit me. Once you have finished with me, you can create new files by opening the **file explorer** on the left corner of the navigation bar.
+
 
 
 ## Requirements
@@ -74,15 +74,15 @@ Use: `--job train`
 * Set `--cross_val` to `3`
 * Excludes guides via `--exclude_guides`
 * Training on the 78 GUIDE-seq experiments
-* To change default behavior, modify `"Vivo-silico"` path in `Jsons/Data_columns_and_paths.json`
+* To change the training data, modify `"Vivo-silico"` path in `Jsons/Data_columns_and_paths.json`
 
 #### ✅ K-Fold Training
 
 * Set `--cross_val` to `2`
 * Do **not** provide `--exclude_guides` or `--test_on_other_data`
-* Uses 10 `train_guides.txt` files from `Data_sets/train_guides`
+* Internally uses 10 `train_guides.txt` files from `Data_sets/train_guides`
 
-#### 📦 Trained Model Paths
+#### 📦 Saved Trained Models
 
 * **K-Cross Example:**
   `Models/GRU-EMB/K_cross/Only_sequence/(k').keras`
@@ -101,7 +101,7 @@ Use: `--job train`
 
 Use: `--job test`
 
-Saves predictions, labels, and OTS indices.
+Saves models predictions
 
 #### ✅ Ensemble Testing
 
@@ -114,7 +114,7 @@ Saves predictions, labels, and OTS indices.
 
 * Set `--cross_val` to `2`
 * Do **not** provide `--exclude_guides` or `--test_on_other_data`
-* Uses 10 `test_guides.txt` from `Data_sets/test_guides`
+* Internally uses 10 `test_guides.txt` from `Data_sets/test_guides`
 
 #### 📂 Test Output Paths
 
@@ -168,7 +168,7 @@ Use: `--job evaluation`
   * `Jsons/feature_columns_dict_change_seq.json`
   * For HSPC testing: `Jsons/feature_columns_dict_hspc.json`
 
-> ⚠️ Make sure feature names in the JSON match column names in your dataset.
+> ⚠️ Make sure feature names in the JSON file match the column names in corresponding dataset.
 
 ---
 
@@ -200,4 +200,5 @@ To create a **beeswarm plot** of epigenetic feature importances.
 
 ```
 
+## Software
 
