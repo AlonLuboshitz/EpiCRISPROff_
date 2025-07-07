@@ -607,7 +607,7 @@ def assign_epigenetics(off_target_data,intersection,file_ending,score_type_dict=
     print(f'length of data: {len(off_target_data)}, 0: {labeled_epig_0}, 1+0: {labeled_epig_1 + labeled_epig_0}')
     return off_target_data
 
-def run_intersection(merged_data_path,bed_folder,if_update):
+def run_intersection(merged_data_path,bed_folder,if_update, chrom_column_names=["chrom","chromStart","chromEnd"]):
     """
     Intersect off-target data with epigenetic data given in bed files.
 
@@ -618,6 +618,7 @@ def run_intersection(merged_data_path,bed_folder,if_update):
         merged_data_path (str): Path to the merged off-target data.
         bed_folder (str): Path to the folder containing the epigenetic data in BED format.
         if_update (bool): If True, the function will update the existing data with the new epigenetic data.
+        chrom_column_names (list): List of column names for chromosome, start, and end positions. Default is ["chrom","chromStart","chromEnd"].
 
     Returns:
         None
@@ -633,7 +634,7 @@ def run_intersection(merged_data_path,bed_folder,if_update):
                      "/home/dsi/lubosha/Off-Target-data-proccessing/Epigenetics/HSPC",False)
                      '''
     data = pd.read_csv(merged_data_path)
-    data = order_data_column_for_intersection(data,["chrom","chromStart","chromEnd"])
+    data = order_data_column_for_intersection(data,chrom_column_names)
     if not "Index" in data.columns:
         data["Index"] = data.index
     bed_paths = get_bed_files(bed_folder)
@@ -1000,18 +1001,11 @@ def calculate_epigenetic_disterbution(folder_path, output_path, epigenetic_file_
     output_file = os.path.join(output_path,"Epigenetic_disterbution.csv")
     pd.DataFrame([epigenetic_dict_values]).to_csv(output_file,index=False)
     print(f"Output file saved in: {output_file}")
-'''
-function gets path for identified (guideseq output data) folder and calls:
-process_folder function, which creates csv folder named: identified_labeled_sub_only
-this folder is then used in merge_positive function to merge the duplicate guide-seq expriments
-argv 1 - path to identified.
-argv 2 -  number of duplicated expriments
-argv 3 - keep the identified label folder or erase it
-'''
+
 if __name__ == '__main__':
     ### assign epigenetic
-    run_intersection(merged_data_path="/home/dsi/lubosha/Off-Target-data-proccessing/Data/TrueOT/Refined_TrueOT_Pavel_dinu.csv",
-                     bed_folder="/home/dsi/lubosha/Off-Target-data-proccessing/Epigenetics/HSPC",if_update=False)
+    run_intersection(merged_data_path="DATA_sets/Refined_TrueOT_shapiro_park_withEpigenetic.csv",
+                     bed_folder="Epigenetic_data/HSPC",if_update=False)
     
     
     
