@@ -5,6 +5,7 @@
 
 ## Requirements
 The required libraries are listed in `requirements.txt`
+Do download and install through pip just run `pip install -r requirements.txt`
 
 ## Zipped files and GIT LFS
 This repository uses [Git Large File Storage (LFS)](https://git-lfs.github.com/) to manage large files such as `.zip` archives in the following folders:
@@ -30,11 +31,12 @@ EpiCRISPROff is an ensemble of randomly iniziatled models. There are 10 ensemble
 
 To download the models go to the following link:
 
-There are 11 folders, one for each feature, inside each folder there are 10 ensemble yielding a total of 500 models.
+There are 11 folders, one for each feature, inside each folder there are 10 ensembles yielding a total of 500 models.
 
 **After downloading these folders do the following:**
 - Move the zip files into the `Downloaded_models` folder by: `mv *.zip Downloaded_models\`
-- To extract the zip folders in the corresponding locations run: `python Extract_trained_models.py`
+- Navigate to the `Downloaded_models` folder: `cd Downloaded_models`
+- To extract the zip folders in the corresponding locations run: `python Extract_trained_models.py` 
 - To delete the zip files after extracting run: `python Remove_zipped_folders.py` 
 
 ## Data
@@ -131,6 +133,7 @@ Set `--features_columns` to a valid path, e.g.:
 By defualt training a new model will train on the 78 GUIDE-seq experiments from the CHANGE-seq study.
 
 **To change the training data change the `"Vivo-silico"` dataset path in Jsons/Data_columns_and_paths.json**
+- If you changed the training data make sure it is formated as described in the Off-target data section
 
 **To exclude spesific sgRNAs and their OTSs from the training data: set the `--exclude_guides` Arg in the 'Args.txt' file.**
 - To train a model make sure to set the `--job` arg to `"train"`
@@ -142,7 +145,7 @@ To train an esnemble set `--cross_val` to `3`
 **To change the number of ensembles and models, one should change the defualts in the `parsing.py` module**
 
 #### K-Fold training - train a model on each partition
-To train k-fold modela set `--cross_val` to `2`
+To train k-fold models set `--cross_val` to `2`
 * Do **not** provide `--exclude_guides` or `--test_on_other_data`
   
 **The partitions are listed in Data_sets/Train_guides and Data_sets/Test_guides. Each Train_k.txt is a list of SUBSET sgRNAs from the CHANGE-seq sgRNAs to train on.
@@ -165,7 +168,7 @@ By defualt the trained models are saved for further used, the path constructed i
 ---
 
 ### Model prediction
-Do predict a trained model set `--job` arg to  `"test"`.
+To predict a trained model set `--job` arg to  `"test"`.
 By defualt the predictions are saved for further evaluation.
 
 #### Ensemble Testing
