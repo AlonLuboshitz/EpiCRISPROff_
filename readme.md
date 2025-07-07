@@ -46,6 +46,7 @@ The off-target sites (OTSs) the model will be trained on should have the followi
 BULGES_COLUMN, MISMATCH_COLUMN, TARGET_COLUMN (sgRNA sequence), REALIGNED_COLUMN (sgRNA with bulges if), 
 OFFTARGET_COLUMN (OTS sequence), CHROM_COLUMN (chromosome of the OTS), START_COLUMN (start position of the OTS)
 END_COLUMN (end position of the OTS), BINARY_LABEL_COLUMN (1/0 label for the OTS), REGRESSION_LABEL_COLUMN.
+- An off-target dataset example is located in `Data_sets/Sample_data.csv`
 
 **To set these spesific columns values one should set the ```Columns_dict``` values in Jsons\Data_columns_and_paths.json**
 - if the sgRNA allignment has no alternations from the original sgRNA one can set the values in REALIGNED_COLUMN to TARGET_COLUMN.
