@@ -4,20 +4,39 @@
 
 
 ## Requirements
+The required libraries are listed in `requirements.txt`
 
 ## Zipped files and GIT LFS
+This repository uses [Git Large File Storage (LFS)](https://git-lfs.github.com/) to manage large files such as `.zip` archives in the following folders:
+
+- `ML_results/`
+- `Data_sets/`
+- `Epigenetic_data/`
+
+### How to set up Git LFS
+
+   ```bash
+   git lfs install
+   git clone repo
+   cd repo
+   git lfs pull
+   ```
+   After that, the .zip files in the folders above will be available as expected. 
+   **Unzip these folders**
+
 
 ## Downloading the trained ensembles
+EpiCRISPROff is an ensemble of randomly iniziatled models. There are 10 ensemble each with 50 models for each feature. Thus, due to storage capicity we uploaded the trained ensembles to external repository in `zonedo.org` with a total of ~14Gb models.
 
-## Quick Start
+To download the models go to the following link:
 
-```bash
-git clone <repo-url>
-cd EpiCRISPROff
-python main.py --argfile "Args.txt"
-```
+There are 11 folders, one for each feature, inside each folder there are 10 ensemble yielding a total of 500 models.
 
----
+**After downloading these folders do the following:**
+- Move the zip files into the `Downloaded_models` folder by: `mv *.zip Downloaded_models\`
+- To extract the zip folders in the corresponding locations run: `python Extract_trained_models.py`
+- To delete the zip files after extracting run: `python Remove_zipped_folders.py` 
+
 ## Data
 
 ### Off-target data
@@ -37,6 +56,15 @@ Further explantion of how to train each type of model is below.
 **To assign new epigenetic values to an OT dataset one should follow these steps:**
 1. Have a valid bed formated epigenetic data: chromosome \t start \t end (at least).
 2. Run the ```run_intersection``` function in the ```Data_labeling_and_processing.py``` script with paths to the off-target data, folder containing the wanted epigenetic data and list of the ["chrom","chrom_start","chrom_end"] columns in the OT data. The function will output a new off-target data: ```_withEpigenetic.csv``` with the intersection values.
+---
+## Quick Start
+
+```bash
+cd EpiCRISPROff
+python main.py --argfile "Args.txt"
+```
+
+---
 
 ## Model training, testing and evaluating:
 
