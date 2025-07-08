@@ -45,12 +45,6 @@ This will move all the zipped files into their location and will unzip them
 
 There are 11 folders, one for each feature, inside each folder there are 10 ensembles yielding a total of 500 models.
 
-**After downloading these folders do the following:**
-- Move the zip files into the `Downloaded_models` folder by: `mv *.zip Downloaded_models\`
-- Navigate to the `Downloaded_models` folder: `cd Downloaded_models`
-- To extract the zip folders in the corresponding locations run: `python Extract_trained_models.py` 
-- To delete the zip files after extracting run: `python Remove_zipped_folders.py` 
-
 ## Data
 
 ### Off-target data
