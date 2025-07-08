@@ -30,7 +30,18 @@ This repository uses [Git Large File Storage (LFS)](https://git-lfs.github.com/)
 ## Downloading the trained ensembles
 EpiCRISPROff is an ensemble of randomly iniziatled models. There are 10 ensemble each with 50 models for each feature. Thus, due to storage capicity we uploaded the trained ensembles to external repository in `zonedo.org` with a total of ~14Gb models.
 
-To download the models go to the following link:
+To download the models go to the following DOI:
+`https://zenodo.org/records/15826405`
+
+Download all the zip files into the **folder `Downloaded_models`**
+
+To unzip all files quickly in the right place:
+1. Go to the working repo i.e, `cd EpiCRISPROff_`
+2. Run `python Extract_trained_models.py`
+This will move all the zipped files into their location and will unzip them
+* By defualt the zip folders are not deleted to avoid re downloading. If storage dont allow to keep both zip and unzipped files change `remove_zip` arg to True in `extract_zip` Function in `Extract_trained_models.py`.
+* To remove all zipp files at once run: `python Remove_zipped_folders.py`
+
 
 There are 11 folders, one for each feature, inside each folder there are 10 ensembles yielding a total of 500 models.
 
