@@ -5,7 +5,8 @@
 
 ## Requirements
 The required libraries are listed in `requirements.txt`
-Do download and install through pip just run `pip install -r requirements.txt`
+
+To download and install through pip just run `pip install -r requirements.txt`
 
 ## Zipped files and GIT LFS
 This repository uses [Git Large File Storage (LFS)](https://git-lfs.github.com/) to manage large files such as `.zip` archives in the following folders:
