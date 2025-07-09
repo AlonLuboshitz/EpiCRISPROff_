@@ -8,9 +8,8 @@ from file_utilities import find_target_files
 from k_groups_utilities import get_partition_information
 #from plotting import plot_ensemeble_preformance,plot_ensemble_performance_mean_std,plot_roc, plot_correlation, plot_pr, plot_n_rank, plot_last_tp, plot_subplots
 from ml_statistics import get_only_seq_vs_group_ensmbels_stats, get_mean_std_from_ensmbel_results
-from multiprocessing import Pool
 
-PATH_TO_STATISTICS_FILE = "/home/dsi/lubosha/Off-Target-data-proccessing/Data/guides_statistics.csv"
+PATH_TO_STATISTICS_FILE = "Data/guides_statistics.csv"
 class evaluation():
     def __init__(self, task, only_pos=False):
         self.results_header = [] # init results header

@@ -630,8 +630,8 @@ def run_intersection(merged_data_path,bed_folder,if_update, chrom_column_names=[
     """
     '''
     example:
-    run_intersection("/home/dsi/lubosha/Off-Target-data-proccessing/Data/TrueOT/Refined_TrueOT_shapiro_park.csv",
-                     "/home/dsi/lubosha/Off-Target-data-proccessing/Epigenetics/HSPC",False)
+    run_intersection("Off-Target-data-proccessing/Data/TrueOT/Refined_TrueOT_shapiro_park.csv",
+                     "Off-Target-data-proccessing/Epigenetics/HSPC",False)
                      '''
     data = pd.read_csv(merged_data_path)
     data = order_data_column_for_intersection(data,chrom_column_names)
@@ -789,13 +789,13 @@ def ot_data_frame_to_convention_columns(data_frame=None, target_column=None, off
     '''
     This function takes a data frame with OT data and transform it columns to the convention columns.
     So the new data frame will have the same columns like all data frames.
-    true_ot = pd.read_csv("/home/dsi/lubosha/Off-Target-data-proccessing/Data/TrueOT/Refined_TrueOT.csv")
+    true_ot = pd.read_csv("Off-Target-data-proccessing/Data/TrueOT/Refined_TrueOT.csv")
     true_ot = ot_data_frame_to_convention_columns(data_frame=true_ot, target_column= 'sgRNA',off_target_column= 'Align.off-target',
                                                   chrom= 'chrom', realigned_target= 'Align.sgRNA', chrom_start='Align.chromStart',
                                                    chrom_end= 'Align.chromEnd',strand= 'Align.strand',bulges= 'Align.#Bulges',insertions=None,
                                                    deletions=None, label='label',read_count=None,mismatches='Align.#Mismatches')
     
-    true_ot.to_csv("/home/dsi/lubosha/Off-Target-data-proccessing/Data/TrueOT/Refined_TrueOT.csv",index=False)
+    true_ot.to_csv("/Off-Target-data-proccessing/Data/TrueOT/Refined_TrueOT.csv",index=False)
     print(true_ot.head(5))  
                               
     
@@ -947,7 +947,7 @@ def split_data_by_name(data=None, name=None, name_column = None, if_by_guides = 
     Saves the new data frame in the output path.
 
     example:
-    split_data_by_name("/home/dsi/lubosha/Off-Target-data-proccessing/Data/TrueOT/Refined_TrueOT.csv",
+    split_data_by_name("Off-Target-data-proccessing/Data/TrueOT/Refined_TrueOT.csv",
                        ["2020_Shapiro","2019_Park"], "Dataset", True, 'target', 'shapiro_park')
     '''
     if not data:
@@ -981,7 +981,7 @@ def calculate_epigenetic_disterbution(folder_path, output_path, epigenetic_file_
     '''
     '''
     example:
-      calculate_epigenetic_disterbution('/home/dsi/lubosha/Off-Target-data-proccessing/Epigenetics/Change-seq/Bed',
+      calculate_epigenetic_disterbution('Off-Target-data-proccessing/Epigenetics/Change-seq/Bed',
                                       'Epigenetics/Change-seq',epigenetic_file_lists=None)  '''
     if epigenetic_file_lists:
         bed_files = epigenetic_file_lists

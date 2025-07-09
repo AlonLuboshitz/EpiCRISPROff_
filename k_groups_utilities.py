@@ -27,8 +27,8 @@ def create_k_balanced_groups(dataset, target_column, label_column, k, output_nam
         -----------
         Example:     
         cons = (['GCTGGTACACGGCAGGGTCANGG', 'GGCGCCCTGGCCAGTCGTCTNGG', 'GTCAGGGTTCTGGATATCTGNGG', 'GGGGCCACTAGGGACAGGATNGG', 'GAGAATCAAAATCGGTGAATNGG', 'GCAGCATAGTGAGCCCAGAANGG'], True)
-        create_k_balanced_groups("/home/dsi/lubosha/Off-Target-data-proccessing/Data/Changeseq/vivovitro_nobulges_withEpigenetic_indexed_read_count_with_model_scores.csv","target","Label",7
-                             ,"Changeseq-Partition","/home/dsi/lubosha/Off-Target-data-proccessing/Data/Changeseq/partition_guides_78",constrained_guides=cons)
+        create_k_balanced_groups("/Off-Target-data-proccessing/Data/Changeseq/vivovitro_nobulges_withEpigenetic_indexed_read_count_with_model_scores.csv","target","Label",7
+                             ,"Changeseq-Partition","/Off-Target-data-proccessing/Data/Changeseq/partition_guides_78",constrained_guides=cons)
 
         '''
     if y_labels_tup is None: # y_labels not given, load them from the dataset

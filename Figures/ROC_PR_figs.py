@@ -164,7 +164,7 @@ if __name__ == "__main__":
     #Plot HSPC generizability
     partition_information = {'Cell type' : 'CD34+ HSPC', 'Verified OTSs': 25, 'Potential OTSs': 81030,'sgRNAs':3}
     mean_std = '/home/dsi/lubosha/Off-Target-data-proccessing/Plots/Change-seq/vivo-silico/Exclude_Refined_TrueOT/on_Refined_TrueOT_shapiro_park/Classification/No_constraints/Full_encoding/No_CW/GRU-EMB/5epochs_1024_batch/Early_stop/Ensemble/All_guides/10_ensembles/mena_std.pkl'
-    p_vals = '/home/dsi/lubosha/Off-Target-data-proccessing/Plots/Change-seq/vivo-silico/Exclude_Refined_TrueOT/on_Refined_TrueOT_shapiro_park/Classification/No_constraints/Full_encoding/No_CW/GRU-EMB/5epochs_1024_batch/Early_stop/Ensemble/All_guides/10_ensembles/p_vals.pkl'
+    p_vals = 'Plots/Exclude_Refined_TrueOT/on_Refined_TrueOT_shapiro_park/GRU-EMB/Ensemble/All_guides/10_ensembles/p_vals.pkl'
     create_figure(mean_std,p_vals,partition_information,'HSPC',True)
 
 

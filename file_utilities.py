@@ -139,8 +139,8 @@ def copy_ensmebles():
     import shutil
 
     # Define the source and destination base directories
-    source_base = "/localdata/alon/ML_results/Change-seq/vivo-vitro/Classification/CNN/Ensemble/Epigenetics_by_features/7_partition/7_partition_50/binary"
-    dest_base = "/localdata/alon/ML_results/Change-seq/vivo-vitro/Classification/CNN/Ensemble/Epigenetics_by_features/7_partition/1_ensembels/50_models/binary"
+    source_base = "ML_results/Change-seq/vivo-vitro/Classification/CNN/Ensemble/Epigenetics_by_features/7_partition/7_partition_50/binary"
+    dest_base = "ML_results/Change-seq/vivo-vitro/Classification/CNN/Ensemble/Epigenetics_by_features/7_partition/1_ensembels/50_models/binary"
 
     # Iterate through all folders in the source binary directory
     for folder in os.listdir(source_base):
