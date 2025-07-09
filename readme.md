@@ -177,7 +177,7 @@ By defualt the trained models are saved for further used, the path constructed i
 ---
 
 ### Model prediction
-To predict a trained model set `--job` arg to  `"test"`.
+To predict a dataset with a trained model set `--job` arg to  `"test"`.
 By defualt the predictions are saved for further evaluation.
 
 #### Ensemble Testing
