@@ -185,7 +185,7 @@ set `--cross_val` to `3`
 
 **To test the trained ensemble on another dataset the `--test_on_other_data` arg must be provided, if not given, the ensemble is evaluated on the training data in the `"vivo_silico"` path in Jsons/Data_columns_and_paths.json.**
 
-* Saves: `ensemble_(m).pkl` containing average predictions of all m models for that ensemble.
+* Saves: `ensemble_(n).pkl` containing average predictions of all m models for that ensemble.
   (Originally saved all 50 model predictions, now only average due to storage)
 
 #### K-Cross Testing
@@ -216,7 +216,7 @@ Set `--job` arg to `evaluation`
 
 #### Ensemble evaluation
 Set `--cross_val` to `3`
-* Evaluates each ensemble `.pkl` score file
+* Evaluates each `ensemble_(n).pkl` score file
 * Saves:
   
   * `all_features.pkl`: Dictionary with feature → \[ensemble\_n, metric values]
@@ -232,6 +232,8 @@ Set `--cross_val` to `2`
   * AUROC/AUPRC plots (in `Figures/`)
 
 >  *P-values from Wilcoxon rank-sum test comparing "only sequence" to features*
+
+* To plot the evaluation results run `python ROC_PR_figs.py` in the Figures folder
 
 ---
 
