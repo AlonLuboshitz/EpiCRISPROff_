@@ -64,9 +64,16 @@ When training a model with sequence and epigenetic data the script assumes the e
 i.e, each epigenetic feature has a column with values for that OTS. 
 Further explantion of how to train each type of model is below.
 
+#### BigWig processing
+To combine multiple bigwig files and average their per-base value run:
+`python bigwig_averaging.py file1.bigwig file2.bigwig.. --output_path /output_directory --output_name file_name`
+That will create in `output_directory` a file with `file_name` with average base pair values across the files given in the `[file1, file2...]` list.
+
 **To assign new epigenetic values to an OT dataset one should follow these steps:**
-1. Have a valid bed formated epigenetic data: chromosome \t start \t end (at least).
-2. Run the ```run_intersection``` function in the ```Data_labeling_and_processing.py``` script with paths to the off-target data, folder containing the wanted epigenetic data and list of the ["chrom","chrom_start","chrom_end"] columns in the OT data. The function will output a new off-target data: ```_withEpigenetic.csv``` with the intersection values.
+1. In a folder have all the BED/BigWig files you want to assign their data.
+2. Make sure a valid bed formated epigenetic data: chromosome \t start \t end (at least).
+3. Run the ```run_intersection``` function in the ```Data_labeling_and_processing.py``` script with paths to the off-target data, folder containing the wanted epigenetic data and list of the ["chrom","chrom_start","chrom_end"] columns in the OT data. The function will output a new off-target data: ```_withEpigenetic.csv``` with the intersection values.
+* BigWig data assignment is the average values across the off-target-site while BED assignment is a binary values if there is an intersection.
 ---
 ## Quick Start
 

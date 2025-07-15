@@ -129,6 +129,48 @@ def get_bed_files(bed_files_folder):
                 bed_files.append(bed_path)
     return bed_files
 
+def get_bigwig_files(bigwig_folder):
+    '''
+    Return a list of BigWig file paths in the given folder (recursively).
+    
+    Args:
+        bigwig_folder (str): Path to the folder containing BigWig files.
+        
+    Returns:
+        list of str: Full paths to .bw or .bigWig files found.
+    '''
+    bigwig_files = []
+    for foldername, subfolders, filenames in os.walk(bigwig_folder):
+        for name in filenames:
+            # Match files ending with .bw or .bigWig (case-insensitive)
+            if re.match(r'.*\.(bw|bigWig)$', name, re.IGNORECASE):
+                bigwig_path = os.path.join(foldername, name)
+                bigwig_files.append(bigwig_path)
+    return bigwig_files
+
+def get_bed_and_bigwig_files(folder_path):
+    '''
+    Recursively search a folder and return lists of BED and BigWig file paths.
+
+    Args:
+        folder_path (str): Path to the folder to search.
+
+    Returns:
+        tuple:
+            - list of str: Paths to .bed, .narrowPeak, or .broadPeak files.
+            - list of str: Paths to .bw or .bigWig files.
+    '''
+    bed_files = []
+    bigwig_files = []
+
+    for dirpath, _, filenames in os.walk(folder_path):
+        for name in filenames:
+            if re.search(r'\.(bed|narrowPeak|broadPeak)$', name, re.IGNORECASE):
+                bed_files.append(os.path.join(dirpath, name))
+            elif re.search(r'\.(bw|bigWig)$', name, re.IGNORECASE):
+                bigwig_files.append(os.path.join(dirpath, name))
+
+    return bed_files, bigwig_files
 
 def get_ending(txt):
     ending = txt.split("/")[-1].split(".")[0]

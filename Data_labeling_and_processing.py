@@ -4,8 +4,9 @@ import os
 import re
 import numpy as np
 import pybedtools
+import pyBigWig
 import time
-from file_utilities import validate_path, create_folder, remove_dir_recursivly, get_bed_files, get_ending
+from file_utilities import validate_path, create_folder, remove_dir_recursivly, get_bed_and_bigwig_files, get_ending
 
 ORDERED_COLUMNS_IDENTIFIED_GS = ['chrom','chromStart','chromEnd','Position','Filename','strand','offtarget_sequence','target','realigned_target','Read_count','missmatches','insertion','deletion','bulges','Label']
 NORMAL_ORDERED_COLUMNS = ['chrom','chromStart','chromEnd','offtarget_sequence','target','strand','realigned_target','Read_count','missmatches','insertion','deletion','bulges']
@@ -520,9 +521,9 @@ def get_bed_columns(bedtool, columns_dict = {4:"score",6:"fold_enrichemnt",7:"lo
                 break
     
     return columns
-def intersect_with_epigentics(whole_data,epigentic_data,if_strand):
+def intersect_with_epigentics_BED(whole_data,epigentic_data,if_strand, chrom_column_names=["chrom","chromStart","chromEnd"]):
     """
-    Intersects off-target data with epigenetic from bed file.
+    Intersects off-target data with epigenetic from BED.
     Utilize pybedtools to intersect the data with -wb param to keep both datas information.
     Args:
         whole_data (pd.DataFrame): data frame with off-target data
@@ -532,8 +533,9 @@ def intersect_with_epigentics(whole_data,epigentic_data,if_strand):
         whole_data (pd.DataFrame): data frame with off-target data
         intersection_df_wa (pd.DataFrame): data frame with intersection data
     """
-    whole_data['chromStart'] = whole_data['chromStart'].astype(int)
-    whole_data['chromEnd'] = whole_data['chromEnd'].astype(int)
+    whole_data[chrom_column_names[1]] = whole_data[chrom_column_names[1]].astype(int)
+    whole_data[chrom_column_names[2]] = whole_data[chrom_column_names[2]].astype(int)
+
     whole_data_bed = pybedtools.BedTool.from_dataframe(whole_data)
     epigentic_data = pybedtools.BedTool(epigentic_data)
     # set columns to data columns + bed columns (5th of bed is score)
@@ -542,6 +544,52 @@ def intersect_with_epigentics(whole_data,epigentic_data,if_strand):
     intersection_wa = whole_data_bed.intersect(epigentic_data,wb=True,s=if_strand) # wb keep both information
     intersection_df_wa = intersection_wa.to_dataframe(header=None,names = columns)
     return whole_data,intersection_df_wa
+    
+def intersect_and_assign_bigwig_data(off_target_data, bigwig_path, file_name, chrom_column_names=["chrom","chromStart","chromEnd"]):
+    """
+    Compute average signal per region in a DataFrame using a BigWig file.
+    The result Series matches the original DataFrame's index for direct assignment.
+    Assigns the average series to the original dataframe and returns it.
+
+    Args:
+        off_target_data (pd.DataFrame): Must contain 'chrom', 'chromStart', 'chromEnd'.
+        bigwig_path (str): Path to the BigWig file.
+        file_name (str): String of the epigenetic file
+        chrom_column_names (list): List of three strings, chr, start, end
+
+    Returns:
+        pd.DataFrame: DataFrame assigned with average bigwig values.
+    """
+    # Preserve original index
+    original_index = off_target_data.Index
+    # Sort for efficient BigWig access
+    off_target_data = off_target_data.rename(columns={
+    chrom_column_names[0]: "chrom",
+    chrom_column_names[1]: "chromStart",
+    chrom_column_names[2]: "chromEnd"
+})
+    
+    df_sorted = off_target_data.sort_values(by=["chrom", "chromStart"]).reset_index()
+    df_sorted["chromStart"] = df_sorted["chromStart"].astype(int)
+    df_sorted["chromEnd"] = df_sorted["chromEnd"].astype(int)
+    # Open BigWig
+    bw = pyBigWig.open(bigwig_path)
+    averages = []
+    for row in df_sorted.itertuples(index=False):
+        idx, chromosome, start, end = row.Index, row.chrom, (row.chromStart), (row.chromEnd)
+        if chromosome in bw.chroms():
+            avg = bw.stats(chromosome, start, end, type="mean")[0]
+            avg = 0.0 if avg is None else avg
+        else:
+            avg = 0.0
+        averages.append((idx, avg))
+
+    bw.close()
+    # Convert to Series with original index
+    avg_series = pd.Series({idx: avg for idx, avg in averages})
+    off_target_data[file_name] = off_target_data['Index'].map(avg_series)
+    return off_target_data
+
     
 def assign_epigenetics(off_target_data,intersection,file_ending,score_type_dict={"binary":True}):
     '''
@@ -607,16 +655,20 @@ def assign_epigenetics(off_target_data,intersection,file_ending,score_type_dict=
     print(f'length of data: {len(off_target_data)}, 0: {labeled_epig_0}, 1+0: {labeled_epig_1 + labeled_epig_0}')
     return off_target_data
 
-def run_intersection(merged_data_path,bed_folder,if_update, chrom_column_names=["chrom","chromStart","chromEnd"]):
+def run_intersection(merged_data_path,epigenetic_folder,if_update, chrom_column_names=["chrom","chromStart","chromEnd"]):
     """
-    Intersect off-target data with epigenetic data given in bed files.
+    Intersect off-target data with epigenetic data given in bed files or bigwig files.
 
     It will intersect the data with each bed file in the folder and assign the epigenetic data to the off-target data.
-    If `if_update` is True, the function will update the existing data with the new epigenetic data.
+    If `if_update` is True, the function will update the existing data with the new epigenetic data, i.e, it will find
+    epigenetic files that not exists in the data and will intersect only their data.
+
+    Bed files assignment will be binary.
+    BigWig assignment will be average nucleotide values over the off-target site.
 
     Args:
         merged_data_path (str): Path to the merged off-target data.
-        bed_folder (str): Path to the folder containing the epigenetic data in BED format.
+        epigenetic_folder (str): Path to the folder containing the epigenetic data in BED or Bigwig format.
         if_update (bool): If True, the function will update the existing data with the new epigenetic data.
         chrom_column_names (list): List of column names for chromosome, start, and end positions. Default is ["chrom","chromStart","chromEnd"].
 
@@ -637,16 +689,25 @@ def run_intersection(merged_data_path,bed_folder,if_update, chrom_column_names=[
     data = order_data_column_for_intersection(data,chrom_column_names)
     if not "Index" in data.columns:
         data["Index"] = data.index
-    bed_paths = get_bed_files(bed_folder)
-    new_data_name = merged_data_path.replace(".csv","")
-    new_data_name = f'{new_data_name}_withEpigenetic.csv'
+    bed_paths,bigwig_paths = get_bed_and_bigwig_files(epigenetic_folder)
+    
+    if "withEpigenetic" not in merged_data_path:
+        new_data_name = merged_data_path.replace(".csv","")
+        new_data_name += "_withEpigenetic.csv"
+    else: new_data_name = merged_data_path
+    
     if if_update:
         bed_paths = remove_exsiting_epigenetics(data,bed_paths,True) # remove exsiting epigenetics
+        bigwig_paths = remove_exsiting_epigenetics(data,bigwig_paths,True)
         new_data_name = merged_data_path # update exsiting data
+    print('Assigning epigenetic data in BED format')
     for bed_path in bed_paths:
-    
-        data,intersect = intersect_with_epigentics(data,epigentic_data=bed_path,if_strand=False)
+        data,intersect = intersect_with_epigentics_BED(data,epigentic_data=bed_path,if_strand=False, chrom_column_names=chrom_column_names)
         data = assign_epigenetics(off_target_data=data,intersection=intersect,file_ending=get_ending(bed_path))
+    print('Assigning epigenetic data in BigWig format')
+    for bigwig_path in bigwig_paths:
+        data = intersect_and_assign_bigwig_data(off_target_data=data, bigwig_path= bigwig_path, 
+                                                file_name=get_ending(bigwig_path), chrom_column_names=chrom_column_names)
     data.to_csv(new_data_name,index=False)
 
 def remove_exsiting_epigenetics(data,bed_type_nd_paths,full_match=False):
@@ -717,6 +778,8 @@ def combine_data_from_diffrenet_studies(studies_list, target_column, with_inters
     if merged_data_guides != diffrence_guides:
         raise ValueError("Not all guides are in the data frames.")
     return merged_data
+
+
 
 #############################################
 ## Remove unwanted examples ##
@@ -1004,8 +1067,8 @@ def calculate_epigenetic_disterbution(folder_path, output_path, epigenetic_file_
 
 if __name__ == '__main__':
     ### assign epigenetic
-    run_intersection(merged_data_path="DATA_sets/Refined_TrueOT_shapiro_park_withEpigenetic.csv",
-                     bed_folder="Epigenetic_data/HSPC",if_update=False)
+    run_intersection(merged_data_path="Data_sets/vivo-silico-78-Guides_withEpigenetic.csv",
+                     epigenetic_folder="Epigenetic_data/Epigenetic_data/CHANGE-seq/BigWig",if_update=False)
     
     
     
