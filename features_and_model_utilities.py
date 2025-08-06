@@ -2,7 +2,7 @@
 This module is used to define parameters needed for features and model training.
 '''
 import os
-def get_full_enconding_parameters_(if_bulges = None):
+def get_full_enconding_parameters_(if_bulges = None, if_downstream_in_sequence = False, down_stream_nuc = 9):
     '''
     Gets the length of the sequence and the number of nucleotides in the sequence for the full enconding.
     '''
@@ -14,6 +14,8 @@ def get_full_enconding_parameters_(if_bulges = None):
     else:
         seq_len = 23
         nuc_num = 4 #ATCG
+    if if_downstream_in_sequence:
+        seq_len += down_stream_nuc
     return (seq_len, nuc_num) 
 
 def get_PiCRISPR_enconding_parameters(if_bulges = None):
@@ -29,14 +31,15 @@ def get_PiCRISPR_enconding_parameters(if_bulges = None):
         nuc_num = 6 #ATCG
     return (seq_len, nuc_num)
 
-def get_encoding_parameters(coding_type, if_bulges):
+def get_encoding_parameters(coding_type, if_bulges, if_downstream_in_sequence = False, down_stream_nuc = 9):
     '''
     Gets the length of the sequence and the number of nucleotides in the sequence for the given encoding type.
     '''
     if coding_type == 1:
         return get_PiCRISPR_enconding_parameters(if_bulges)
     elif coding_type == 2:
-        return get_full_enconding_parameters_(if_bulges)
+        return get_full_enconding_parameters_(if_bulges,if_downstream_in_sequence = if_downstream_in_sequence,
+                                               down_stream_nuc = down_stream_nuc)
     else:
         raise ValueError("Invalid coding type")
     

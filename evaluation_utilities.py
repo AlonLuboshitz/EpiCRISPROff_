@@ -347,7 +347,7 @@ def compute_average_k_cross_results(features_results, k_group_columns,
         p_val = p_vals[col]
         
         plot_bar_plot(metric_values=mean,std_values=std,p_values=p_val,
-                      feature_names=features,metric_name=col.upper(),plot_name=f'{col.upper()}_k_cross_averages', key_renaming_bool=True
+                      feature_names=features,metric_name=col.upper(),plot_name=f'{col.upper()}_k_cross_averages_refined', key_renaming_bool=True
                                             )
     if save_results:
         averaged_results.to_csv(os.path.join(average_path, "averaged_results.csv"))

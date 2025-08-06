@@ -1,8 +1,12 @@
 # EpiCRISPROff
 
-We present EpiCRISPROff, a tool designed to predict CRISPR/Cas9 off-target cleavage probabilty by incorporating epigenetic  marks. EpiCRISPROff is a GRU-embedded sequence processing followed by binary vector of epigenetic marks and multi-layered perceptron consisting of fully connected layers with 128 and 64 neurons, terminating in a final neuron that outputs off-target probabilty based on the CRISPR-Bulge model. The input includes a pair of sgRNA sequence and off-target sequence of 23/24nt length and eight possible epigenetic markers (chromatin accessibility and seven histone modifications: H3K4me1, H3K4me3, H3K9me3, H3K27me3, H3K36me3, H3K9ac, and H3K27ac).
+We present EpiCRISPROff, a tool designed to predict CRISPR/Cas9 off-target cleavage probabilty by incorporating epigenetic  marks. EpiCRISPROff is based on the CRISPR-Bulge model: a GRU-embedded sequence processing followed by binary vector of epigenetic marks and multi-layered perceptron consisting of fully connected layers with 128 and 64 neurons, terminating in a final neuron that outputs off-target probabilty based on the CRISPR-Bulge model. The input includes a pair of sgRNA sequence and off-target sequence of 23/24nt length and eight possible epigenetic markers (chromatin accessibility and seven histone modifications: H3K4me1, H3K4me3, H3K9me3, H3K27me3, H3K36me3, H3K9ac, and H3K27ac). 
 
-We utilized the 78 GUIDE-seq experiments reproccesed in the CRISPR-Bulge study dataset to evaluate the contributions of  epigenetic marks to off-target cleavage probabilty prediction. Our results indicate that epigenetic markers improve prediction preformance in predicting CRISPR/Cas9 off-target cleavage probabilty. Moreover, we demonstrated the generalizability of our trained model by successfully predicting off-target activity in other cell types.
+CRISPR-Bulge paper: Ofir Yaish, Yaron Orenstein, Generating, modeling and evaluating a large-scale set of CRISPR/Cas9 off-target sites with bulges, Nucleic Acids Research, Volume 52, Issue 12, 8 July 2024, Pages 6777–6790, https://doi.org/10.1093/nar/gkae428
+
+CRISPR-Bulge repo: https://github.com/OrensteinLab/CRISPR-Bulge
+
+We utilized the 78 GUIDE-seq experiments reproccesed in the CRISPR-Bulge study dataset to evaluate the contributions of epigenetic marks to off-target cleavage probabilty prediction. Our results indicate that epigenetic markers improve prediction preformance in predicting CRISPR/Cas9 off-target cleavage probabilty. Moreover, we demonstrated the generalizability of our trained model by successfully predicting off-target activity in other cell types.
 
 
 ## Requirements
@@ -273,6 +277,9 @@ To create a **beeswarm plot** of epigenetic feature importances.
 
 
 ---
+
+## Other methods
+To run CRISPR-SGRU, CRISPR-MFH go to Other_methods folder. In each folder there is a corresponding readme.md.
 
 ## Software
 We trained the model on NVIDIA A100 80GB GPU. 

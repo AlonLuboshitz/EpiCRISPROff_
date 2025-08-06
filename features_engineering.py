@@ -34,7 +34,9 @@ def create_data_frames_for_features(data, if_data_reproducibility, target_column
         exclude_guides (tuple): (guides_description, path to guides to exclude from the data, target_column)
         test_on_other_data (bool): If True, the guides will not be excluded from the data.
         if_bulges (bool): If True, bulges will be included in the data."""
-    data_table = pd.read_csv(data) # open data
+    if isinstance(data,str):
+        data_table = pd.read_csv(data) # open data
+    else: data_table = data
     if not if_bulges: # if bulges are not included
         data_table = data_table[data_table[bulges_column] == 0] # remove bulges
     if exclude_guides: # exlucde not empty
@@ -68,11 +70,50 @@ def return_df_without_guides(data_frame, guide_to_exlucde, data_frame_column):
     
     # Return the dataframe without the excluded guides
     return data_frame[~data_frame[data_frame_column].isin(guides_to_exclude)]
+
+def add_downstream_to_sgRNa_OT_sequences(data, target_column, off_target_column, downstream_column, downstream_length):
+    """
+    Appends a specified number of downstream nucleotides to both target and off-target sequences in a DataFrame.
+
+    Parameters:
+    -----------
+    data : pandas.DataFrame
+        The input DataFrame containing sequence information.
     
+    target_column : str
+        The name of the column containing target (sgRNA) sequences to be extended.
+    
+    off_target_column : str
+        The name of the column containing off-target sequences to be extended.
+    
+    downstream_column : str
+        The name of the column containing downstream sequence context (e.g., genomic flanking regions).
+    
+    downstream_length : int
+        The number of nucleotides to extract from the start of the downstream sequence and append.
+
+    Returns:
+    --------
+    pandas.DataFrame
+        The DataFrame with updated target and off-target sequence columns extended by the downstream sequence.
+    
+    Notes:
+    ------
+    This function modifies the original `data` DataFrame in-place and returns it.
+    Assumes that all specified columns contain string-like sequence data.
+    """
+    if isinstance(data,str):
+        data = pd.read_csv(data)
+    data[target_column] = data[target_column] + data[downstream_column].str[:downstream_length]
+    data[off_target_column] = data[off_target_column] + data[downstream_column].str[:downstream_length]
+    return data
+
+
 def generate_features_and_labels(data_path, manager, if_bp, if_only_seq , 
                                  if_seperate_epi, epigenetic_window_size, features_columns, if_data_reproducibility,
                                  columns_dict, transform_y_type = False, sequence_coding_type = 1, if_bulges = False,
-                                 exclude_guides = None, test_on_other_data = False, return_otss = False,exclude_ontarget=False):
+                                 exclude_guides = None, test_on_other_data = False, return_otss = False,exclude_ontarget=False, 
+                                 if_downstream = False, downstream_length = 9, downstream_in_seq = True):
     '''
     This function generates x and y data for gRNAs and their corresponding off-targets.
     For each (gRNA, OTS) pair it one-hot encodes the sequences and adds epigenetic data if required.
@@ -110,13 +151,20 @@ def generate_features_and_labels(data_path, manager, if_bp, if_only_seq ,
         grna_otss_dict - dictionary of gRNA and their corresponding OTS sequences (if return_otss is True).
     
 '''
+    #NOTE: Adding downstream to sgrna and off_target_sequences!
+    if if_downstream:
+        if downstream_in_seq:
+            data_path = add_downstream_to_sgRNa_OT_sequences(data_path, target_column=columns_dict["REALIGNED_COLUMN"],
+                                                        off_target_column=columns_dict["OFFTARGET_COLUMN"],
+                                                        downstream_column=columns_dict['DOWNSTREAM_COLUMN'],
+                                                        downstream_length=downstream_length)
     splited_guide_data,guides = create_data_frames_for_features(data_path, if_data_reproducibility,
                                                                 columns_dict["TARGET_COLUMN"],exclude_guides,test_on_other_data,
                                                                 if_bulges,columns_dict["BULGES_COLUMN"])
     x_data_all = []  # List to store all x_data
     y_labels_all = []  # List to store all y_labels
     ALL_INDEXES.clear() # clear indexes
-    seq_len,nuc_num = get_encoding_parameters(sequence_coding_type,if_bulges) # get sequence encoding parameters
+    seq_len,nuc_num = get_encoding_parameters(sequence_coding_type,if_bulges,downstream_in_seq,downstream_length) # get sequence encoding parameters
     encoded_length = seq_len * nuc_num # set encoded length
     grna_otss_dict = {} # init dict for sgRNA and its OTSS
     for guide_data_frame in splited_guide_data.values(): # for every guide get x_features by booleans
@@ -125,7 +173,7 @@ def generate_features_and_labels(data_path, manager, if_bp, if_only_seq ,
                                                   (guide_data_frame[columns_dict["BULGES_COLUMN"]] == 0))]
         # get seq info - represented in all!
         if sequence_coding_type == 1: # PiCRISPR style
-            seq_info = get_seq_one_hot(data=guide_data_frame, encoded_length = encoded_length, bp_presenation = nuc_num,
+            seq_info = PiCRISPR_one_hot(data=guide_data_frame, encoded_length = encoded_length, bp_presenation = nuc_num,
                                     off_target_column=columns_dict["OFFTARGET_COLUMN"],
                                     target_column=columns_dict["REALIGNED_COLUMN"]) #int8
         elif sequence_coding_type == 2: # Full encoding
@@ -150,6 +198,14 @@ def generate_features_and_labels(data_path, manager, if_bp, if_only_seq ,
         else : # add features into 
             x_data = guide_data_frame[features_columns].values.astype(np.int8)
             x_data = np.append(seq_info, x_data, axis = 1)
+        #NOTE: adding downstream by additional vector. now adding by sequence.
+        if if_downstream: # add downstream sequence
+            if not downstream_in_seq:
+                    
+                down_stream_seq = guide_data_frame[columns_dict["DOWNSTREAM_COLUMN"]].values
+                down_stream_seq = oneHot_sequences(down_stream_seq, length=downstream_length, size=4)
+                down_stream_seq = down_stream_seq.reshape(down_stream_seq.shape[0], downstream_length*4)
+                x_data = np.append(x_data, down_stream_seq, axis = 1)
         if "Index" in guide_data_frame.columns:
             ALL_INDEXES.append(guide_data_frame["Index"])
         else:
@@ -169,9 +225,37 @@ def generate_features_and_labels(data_path, manager, if_bp, if_only_seq ,
         return (x_data_all,y_labels_all,guides,grna_otss_dict)
     return (x_data_all,y_labels_all,guides)
 
+def oneHot_sequences(sequences, length, size=4):
+    """
+    Truncate sequences to a fixed length and return one-hot encoded numpy array.
+
+    Args:
+        sequences (list or pandas Series): List of DNA sequences (strings).
+        length (int): Desired fixed length to truncate each sequence.
+        size (int): Alphabet size (default 4 for ACGT).
+
+    Returns:
+        np.ndarray: One-hot encoded array of shape (n_sequences, length, size)
+    """
+    # Translation: A → 0, C → 1, G → 2, T → 3
+    translator = str.maketrans("ACGT", "0123")
+
+    # Step 1: Truncate and translate
+    sequence_as_ints = [
+        list(map(int, seq[:length].translate(translator)))
+        for seq in sequences
+    ]
+    # Step 2: Convert to numpy and one-hot encode
+    int_array = np.array(sequence_as_ints, dtype=int)
+    one_hot = np.eye(size)[int_array]  # Shape: (N, length, size)
+    one_hot = one_hot.astype(np.int8)  # Convert to int8 for memory efficiency
+    return one_hot
+
+    
     
 
-def get_seq_one_hot(data, encoded_length, bp_presenation, off_target_column, target_column):
+
+def PiCRISPR_one_hot(data, encoded_length, bp_presenation, off_target_column, target_column):
     """
     Generate one-hot encoded representation of gRNA and off-target sequences.
 

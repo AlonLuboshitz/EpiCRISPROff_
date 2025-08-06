@@ -1,6 +1,6 @@
 
 from multiprocessing import Pool
-
+from typing import Tuple
 from file_management import File_management
 from file_utilities import create_paths, keep_only_folders
 from evaluation import evaluation
@@ -13,6 +13,7 @@ from parsing import features_method_dict, cross_val_dict, model_dict,encoding_di
 from parsing import class_weights_dict,off_target_constrians_dict, get_minimal_parser, parse_args, validate_main_args
 from time_loging import log_time, save_log_time, set_time_log
 from ensemble_utilities import ensemble_parmas, get_scores_combi_paths_for_ensemble 
+from run_models import run_models
 import os
 import numpy as np
 import sys
@@ -22,11 +23,11 @@ import traceback
 import pickle
 
 global ARGS, PHATS, COLUMNS, TRAIN, TEST, MULTI_PROCESS
+DOWNSTREAM_SEQ = False
 
 
 
-
-
+#NOTE: in setup_runner gave if downstream and # additional features line 160~. 
 
 def set_args(argv):
     visible_args = ['--model', '--cross_val', '--features_method', '--features_columns', '--job', '--exclude_guides','--test_on_other_data']
@@ -129,7 +130,8 @@ def init_file_management(params=None, phats = None):
                                       model_name=ml_name, epoch_batch=epochs_batch,early_stop=early_stop,
                                       features=feature_type,class_weight=cw,encoding_type=encoding_type,
                                         ots_constriants=ots_constraints,transformation=ARGS.transformation,
-                                        exclude_guides=ARGS.exclude_guides, test_on_other_data=ARGS.test_on_other_data)
+                                        exclude_guides=ARGS.exclude_guides, test_on_other_data=ARGS.test_on_other_data, 
+                                        with_downstream=ARGS.downstream)
     return file_manager
 
 def init_model_runner(ml_task = None, model_num = None, cross_val = None, features_method = None):
@@ -137,7 +139,7 @@ def init_model_runner(ml_task = None, model_num = None, cross_val = None, featur
     If no parameters are given, the function will use the default parameters passed in the arguments to main.py.
     --------- 
     Returns the run_models object.'''
-    from run_models import run_models, tf_clean_up
+    from run_models import tf_clean_up
     atexit.register(tf_clean_up)
     model_runner = run_models()
     if not ml_task: # Not none
@@ -148,14 +150,18 @@ def init_model_runner(ml_task = None, model_num = None, cross_val = None, featur
         cross_val = ARGS.cross_val
     if not features_method:
         features_method = ARGS.features_method
+    
     model_runner.setup_runner(ml_task=ml_task, model_num=model_num, cross_val=cross_val,
                                features_method=features_method,cw=ARGS.class_weights, encoding_type=ARGS.encoding_type,
                                  if_bulges=with_bulges(ARGS.off_target_constriants), early_stopping=ARGS.early_stoping
-                                 ,deep_parameteres=ARGS.deep_params)
+                                 ,deep_parameteres=ARGS.deep_params,if_down_stream=False)
     set_multi_process(model_runner.get_gpu_availability())
+    if ARGS.downstream: # Add additional features
+        additional_length = ARGS.downstream_length * 4
+        model_runner.set_additional_flanking_features(additional_features_num=additional_length)
     return model_runner
 
-def init_model_runner_file_manager(model_params = None):
+def init_model_runner_file_manager(model_params = None) -> Tuple[run_models,File_management]:
     if model_params:
         model_runner = init_model_runner(*model_params)
     else :
@@ -190,7 +196,8 @@ def get_x_y_data(file_manager, model_runner_booleans, features_columns = None):
                                          ARGS.epigenetic_window_size, features_columns, 
                                          data_reproducibility,COLUMNS, ARGS.transformation.lower(),
                                          sequence_coding_type=ARGS.encoding_type, if_bulges= with_bulges(ARGS.off_target_constriants),
-                                         exclude_guides = ARGS.exclude_guides,test_on_other_data=file_manager.get_train_on_other_data())
+                                         exclude_guides = ARGS.exclude_guides,test_on_other_data=file_manager.get_train_on_other_data(),
+                                         if_downstream=ARGS.downstream,downstream_length=ARGS.downstream_length, downstream_in_seq = DOWNSTREAM_SEQ)
     print(f"Memory Usage features: {get_memory_usage():.2f} MB")
     log_time(f"Features_generation_{encoding_dict()[ARGS.encoding_type]}_end")
     return x,y,guides
@@ -324,7 +331,8 @@ def train_k_groups_by_features(feature_dict = None, all_epigenetics = True):
         file_manager.set_models_path(model_base_path) # set model path
         file_manager.set_ml_results_path(ml_results_base_path) # set ml results path
         file_manager.add_type_to_models_paths(temp_suffix) # add path to train ensmbel
-        runner.set_features_columns(feature) # set feature   
+        runner: run_models
+        runner.set_additional_epigenetic_features(len(feature)) # set feature   
         train_k_groups_only_seq(runner,file_manager,x_features,y_features,all_guides,t_guides)
 def train_k_groups_only_seq(runner = None, file_manager = None, x_features= None,
                              y_features = None, all_guides=None, guides = None):
@@ -431,7 +439,9 @@ def test_k_groups_by_features(feature_dict = None, all_epigenetics = True):
         file_manager.set_models_path(model_base_path) # set model path
         file_manager.set_ml_results_path(ml_results_base_path) # set ml results path
         file_manager.add_type_to_models_paths(temp_suffix) # add path to train ensmbel
-        runner.set_features_columns(feature) # set feature  
+        runner: run_models
+
+        runner.set_additional_epigenetic_features(len(feature)) # set feature  
         epi_results[temp_suffix.split('/')[1]] = test_k_groups_only_seq(runner=runner,file_manager=file_manager,
                                x_features=x_features,y_features=y_features,all_guides=all_guides,
                                guides=t_guides,save_raw_scores=True)       
@@ -499,7 +509,7 @@ def create_ensembels_by_all_feature_columns(model_params = None,cross_val_params
 
 
 
-def create_ensembels_for_a_given_feature(group, feature,runner, file_manager,train_guides,model_base_path,ml_results_base_path,
+def create_ensembels_for_a_given_feature(group, feature,runner:run_models, file_manager,train_guides,model_base_path,ml_results_base_path,
                                          n_models=50, n_ensmbels=10, multi_process = False,all_epigenetics = False):
     '''This function create a ensemble for a given group of features and A feature in that group by utilizing the create_n_ensembles function.
     It extracts the x_features, y_features and all_guides from the file manager given the specific feature and create the ensembles.
@@ -525,7 +535,9 @@ def create_ensembels_for_a_given_feature(group, feature,runner, file_manager,tra
     file_manager.set_models_path(model_base_path) # set model path
     file_manager.set_ml_results_path(ml_results_base_path) # set ml results path
     file_manager.add_type_to_models_paths(temp_suffix) # add path to train ensmbel
-    runner.set_features_columns(feature) # set feature   
+    
+    
+    runner.set_additional_epigenetic_features(len(feature)) # set feature   
     create_n_ensembles(n_ensmbels, n_models, train_guides, file_manager, runner,x_features,y_features,all_guides, multi_process)
     log_time(f'Create_ensmbels_with_epigenetic_features_{group}_{feature}_end')
     # Delete data free memory
@@ -648,7 +660,7 @@ def test_ensemble_by_features(model_params= None, cross_val_params= None, multi_
         for arg in arg_list:
             test_ensemble_via_epi_feature_2(*arg)
     
-def test_ensemble_via_epi_feature_2(group, feature, runner, file_manager, t_guides, model_base_path, ml_results_base_path,n_models, n_ensmbels, multi_process):
+def test_ensemble_via_epi_feature_2(group, feature, runner : run_models, file_manager, t_guides, model_base_path, ml_results_base_path,n_models, n_ensmbels, multi_process):
     # NOTE: ALL EPIGENETIS!
     skip_all_epigenetics = True
     group_epi_path = get_feature_column_suffix(group,feature)
@@ -658,7 +670,8 @@ def test_ensemble_via_epi_feature_2(group, feature, runner, file_manager, t_guid
     file_manager.set_models_path(model_base_path)
     file_manager.set_ml_results_path(ml_results_base_path)
     file_manager.add_type_to_models_paths(group_epi_path)
-    runner.set_features_columns(feature)
+    
+    runner.set_additional_epigenetic_features(len(feature))
     x_features, y_features, all_guides = get_x_y_data(file_manager, runner.get_model_booleans(),  feature)
     score_path, combi_path = file_manager.create_ensemble_score_nd_combi_folder() # Create score and combi folders
     ensmbels_paths = create_paths(file_manager.get_model_path())  # Create paths for each ensmbel in partition

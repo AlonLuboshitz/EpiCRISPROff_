@@ -9,7 +9,8 @@
     "START_COLUMN": "chromStart",
     "END_COLUMN": "chromEnd",
     "BINARY_LABEL_COLUMN": "Label",
-    "REGRESSION_LABEL_COLUMN": "Read_count"
+    "REGRESSION_LABEL_COLUMN": "Read_count",
+    "DOWNSTREAM_COLUMN" : "downstream"
 },
 "Change_seq" : {
     "Guides_path" : "Data_sets",

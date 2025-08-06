@@ -719,18 +719,18 @@ def remove_exsiting_epigenetics(data,bed_type_nd_paths,full_match=False):
     if full_match is False, the function will remove any epigenetic mark that is partially matched in the data frame.
     '''
     new_chrom_information = [] # assign new list to keep only new data
-    for chrom_type,bed_paths in bed_type_nd_paths:
+    for bed_paths in bed_type_nd_paths:
         paths_list = [] 
         for bed_path in bed_paths:
             file_ending = get_ending(bed_path) 
             if full_match:
-                column_to_check = f'^{chrom_type}_{file_ending}$'
-            else : column_to_check = f'^{chrom_type}_{file_ending}'
+                column_to_check = f'^{file_ending}$'
+            else : column_to_check = f'^{file_ending}'
             if any(re.match(column_to_check, column) for column in data.columns):
                 continue
             else : paths_list.append(bed_path)
             
-        new_chrom_information.append((chrom_type,paths_list))
+        new_chrom_information.append((paths_list))
     return new_chrom_information
 def order_data_column_for_intersection(data,chrom_columns):
     '''
@@ -1065,10 +1065,55 @@ def calculate_epigenetic_disterbution(folder_path, output_path, epigenetic_file_
     pd.DataFrame([epigenetic_dict_values]).to_csv(output_file,index=False)
     print(f"Output file saved in: {output_file}")
 
+
+def nucleotide_distribution(sequences):
+    """
+    Calculate the per-position frequency distribution of A, C, G, and T across a list or Series of equal-length DNA sequences.
+
+    Parameters:
+    -----------
+    sequences : list or pandas.Series of str
+        A collection of DNA sequences. All sequences must be the same length.
+
+    Returns:
+    --------
+    pandas.DataFrame
+        A DataFrame where rows correspond to nucleotides ('A', 'C', 'G', 'T'),
+        columns correspond to sequence positions (0-based), and values are the
+        relative frequency (0–1) of each nucleotide at each position.
+    
+    Notes:
+    ------
+    - Sequences are automatically uppercased.
+    - Characters other than A/C/G/T are ignored in the output.
+    - Assumes all sequences are the same length; no padding or trimming is performed.
+    """
+    # Convert to uppercase numpy array of shape (n_sequences, sequence_length)
+    arr = np.array([list(seq.upper()) for seq in sequences])
+    
+    # Get sequence length
+    seq_len = arr.shape[1]
+    
+    # Possible nucleotides
+    nucleotides = ['A', 'C', 'G', 'T']
+    
+    # Prepare result: rows = nucleotides, columns = positions
+    result = pd.DataFrame(0.0, index=nucleotides, columns=range(seq_len))
+    
+    for i in range(seq_len):
+        col = arr[:, i]
+        counts = pd.Series(col).value_counts(normalize=True)
+        for nuc in counts.index:
+            if nuc in nucleotides:
+                result.at[nuc, i] = counts[nuc]
+    
+    return result
+
+
 if __name__ == '__main__':
     ### assign epigenetic
-    run_intersection(merged_data_path="Data_sets/vivo-silico-78-Guides_withEpigenetic.csv",
-                     epigenetic_folder="Epigenetic_data/Epigenetic_data/CHANGE-seq/BigWig",if_update=False)
+    run_intersection(merged_data_path="EpiCRISPROff_/Data_sets/Refined_TrueOT_Lazzarotto_withEpigenetic.csv",
+                     epigenetic_folder="EpiCRISPROff_/Epigenetic_data/Epigenetic_data/CHANGE-seq",if_update=False)
     
     
     

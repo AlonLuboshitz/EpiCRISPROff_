@@ -6,7 +6,9 @@ key_renaming = {
     "Only-seq": "Sequence only",
     "Only-sequence": "Sequence only",
     "All-epigenetics": "All epigenetic marks",
-    "ATAC-seq": "Chromatin accessibility"
+    "ATAC-seq": "Chromatin accessibility",
+    "Methylation": "DNA methylation",
+    "CTCF": "CTCF binding"
 }
 
 

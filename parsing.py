@@ -139,6 +139,9 @@ def main_argparser():
     parser.add_argument('--test_on_other_data','-tood', type=str, nargs= '+', help='''Test on other data:
                         [list] l[0] - path to json file (dictionary with keys as data names and values paths to data)
                         l[1] - data name to test on - should match the keys in the json file.''', default=None)
+    parser.add_argument('--downstream', action='store_true', help='If given will add downstream sequences to the features')
+    parser.add_argument('--downstream_length', type=int, default=9, help='Length of the downstream sequences to add, default is 9')
+    
     
     # Set defualt arguments, not altered in EpiCRISPROff
     parser.set_defaults(
@@ -160,6 +163,8 @@ def main_argparser():
     class_weights=2,
     deep_params=[5, 1024],
     early_stoping=[1, 10],
+    downstream=False,
+    downstream_length=9
     
 )
     

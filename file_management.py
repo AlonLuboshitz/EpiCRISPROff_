@@ -172,7 +172,7 @@ class File_management:
 
     def set_model_parameters(self,data_type, model_task, cross_validation, model_name,epoch_batch,early_stop, 
                              features,class_weight,encoding_type,ots_constriants, transformation = None,
-                               exclude_guides = None, test_on_other_data = None):
+                               exclude_guides = None, test_on_other_data = None, with_downstream = False):
         '''
         
         This function sets the model parameters to save the model in the corresponding path.
@@ -203,8 +203,12 @@ class File_management:
             
         #     full_path = os.path.join(model_task,transformation,ots_constriants,encoding_type,class_weight,model_name,epoch_batch,early_stop,cross_validation,features)
         #     plots_path = os.path.join(plots_model_task,model_task,transformation,ots_constriants,encoding_type,class_weight,model_name,epoch_batch,early_stop,cross_validation)
+        plots_addition = ""
+        if with_downstream:
+            features = f'{features}_with_downstream'
+            plots_addition = "withDownstream"
         full_path = os.path.join(model_name,cross_validation,features)
-        plots_path = os.path.join(model_name,cross_validation)
+        plots_path = os.path.join(model_name,cross_validation,plots_addition)
         self.add_type_to_models_paths(full_path)
         self.add_type_to_plots_path(plots_path)        
         self.task = model_task

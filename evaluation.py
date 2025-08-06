@@ -74,6 +74,8 @@ class evaluation():
         """
         # Get the scores for all the models. Score are in pkl files.
         paths_to_scores = find_target_files(os.path.join(ml_results_path.split('K_cross')[0], "K_cross"), "raw_scores.pkl")
+        #paths_to_scores = [path for path in paths_to_scores if 'downstream' not in path]
+        #paths_to_scores = [path for path in paths_to_scores if 'downstream_seq' in path]
         if paths_to_scores == []:
             raise FileNotFoundError(f"No raw_scores.pkl files found in the K_cross folder: {ml_results_path}")
         # Open pkl files for each feature.
@@ -101,6 +103,7 @@ class evaluation():
             feature_results = get_k_groups_results(feature_partitions, self.task, self.k_group_columns)
             features_results[feature] = feature_results
         self.k_group_columns.remove('partition')
+        #plots_path = os.path.join(plots_path,'withDownstream_in_sequence')
         all_partitions_path = create_folder(plots_path, "All_partitions")
         # Save results                
         with pd.ExcelWriter(os.path.join(all_partitions_path,'results_summary.xlsx'), engine='openpyxl') as writer:

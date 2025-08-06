@@ -37,7 +37,8 @@ class run_models:
         self.init_features_methods_dict()
         self.set_computation_power(FORCE_CPU)
         self.epigenetic_window_size = 0
-        self.features_columns = "" 
+        self.additional_epigenetic_features = 0
+        self.additional_flanking_sequence_features = 0
 
     ## initairs ###
     # This functions are used to init necceseray parameters in order to run a model.
@@ -136,7 +137,7 @@ class run_models:
 
     def setup_runner(self, ml_task = None, model_num = None, cross_val = None, features_method = None, 
                      over_sampling = None, cw = None, encoding_type = None, if_bulges = None , early_stopping = None , deep_parameteres = None,
-                     train = False, test =False):
+                     train = False, test =False, if_down_stream = False, downstream_length = 9):
         """
         This function sets the parameters for the model.
 
@@ -157,7 +158,7 @@ class run_models:
         self.set_model(model_num, deep_parameteres)
         self.set_cross_validation(cross_val)
         self.set_features_method(features_method)
-        self.set_encoding_parameters(encoding_type, if_bulges)
+        self.set_encoding_parameters(encoding_type, if_bulges, if_down_stream,downstream_length)
 
         self.set_over_sampling('n') # set over sampling
         self.set_class_wieghting(cw)
@@ -197,12 +198,11 @@ class run_models:
                 self.paitence = int(paitence)
             self.init_early_stoping()
     
-    def set_encoding_parameters(self,enconding_type, if_bulges):
-        self.guide_length, self.bp_presntation = get_encoding_parameters(enconding_type, if_bulges)
-        self.encoded_length =  self.guide_length * self.bp_presntation
+    def set_encoding_parameters(self,enconding_type, if_bulges, if_downstream, downstream_length):
+        self.guide_length, self.bp_presntation = get_encoding_parameters(enconding_type, if_bulges,if_downstream, downstream_length)
         if self.ml_name == "GRU-EMB":
             self.bp_presntation = self.bp_presntation**2
-            self.encoded_length =  self.guide_length * self.bp_presntation
+        self.encoded_length =  self.guide_length * self.bp_presntation
         self.init_encoded_params = True
     '''Set seeds for reproducibility'''
     def set_deep_seeds(self,seed=42):
@@ -317,10 +317,17 @@ class run_models:
         self.method_init = True
 
     '''Set features columns for the model'''
-    def set_features_columns(self, features_columns):
-        if features_columns:
-            self.features_columns = features_columns
-        else: raise RuntimeError("Trying to set features columns for model where no features columns were given")
+    def set_additional_epigenetic_features(self, additional_features_num =0):
+        if additional_features_num < 0:
+            raise ValueError("Number of additional features must be a non negative integer")
+        else :
+            self.additional_epigenetic_features = additional_features_num
+    
+    def set_additional_flanking_features(self,additional_features_num =0):
+        if additional_features_num < 0:
+            raise ValueError("Number of additional features must be a non negative integer")
+        else :
+            self.additional_flanking_sequence_features = additional_features_num
 
     def set_big_wig_number(self, number):
         if isinstance(number,int) and number >= 0:
@@ -366,7 +373,7 @@ class run_models:
         elif self.if_seperate_epi: # window size epenetics
             self.features_description = [file_name[0] for file_name in self.file_manager.get_bigwig_files()]
             self.features_description.append(f'window_{self.epigenetic_window_size}')
-        else : self.features_description = self.features_columns.copy() # features are added separtley
+        else : self.features_description = self.additional_epigenetic_features.copy() # features are added separtley
     
  
    
@@ -391,6 +398,7 @@ class run_models:
     ## MODELS:
     '''1. GET MODEL - from models.py'''
     def get_model(self):
+        additional_features = self.additional_epigenetic_features + self.additional_flanking_sequence_features
         if self.ml_name == "LOGREG":
             return get_logreg(self.random_state, self.data_reproducibility)
         elif self.ml_name == "XGBOOST":
@@ -399,11 +407,11 @@ class run_models:
             return get_xgboost_cw(self.inverse_ratio, self.random_state,self.data_reproducibility)
         elif self.ml_name == "CNN":
             return get_cnn(self.guide_length, self.bp_presntation, self.if_only_seq, self.if_bp, 
-                           self.if_seperate_epi, len(self.features_columns), self.epigenetic_window_size, self.bigwig_numer, self.ml_task)
+                           self.if_seperate_epi, additional_features, self.epigenetic_window_size, self.bigwig_numer, self.ml_task)
         elif self.ml_name == "RNN":
             pass
         elif self.ml_name == "GRU-EMB":
-            return get_gru_emd(task=self.ml_task,input_shape=(self.guide_length,self.bp_presntation),num_of_additional_features=len(self.features_columns),if_flatten=True)
+            return get_gru_emd(task=self.ml_task,input_shape=(self.guide_length,self.bp_presntation),num_of_additional_features=additional_features,if_flatten=True)
     '''2. Training and Predicting with model:'''
     ## Train model: if Deep learning set class wieghting and extract features
     def train_model(self,X_train, y_train):
@@ -413,7 +421,7 @@ class run_models:
         model = self.get_model()
         if self.ml_type == "DEEP":
             self.set_hyper_params_class_wieghting(y_train= y_train)
-            if self.if_seperate_epi or (not (self.if_only_seq or self.if_bp)): 
+            if self.if_seperate_epi or (not (self.if_only_seq or self.if_bp)) or self.additional_flanking_sequence_features>0: 
                 # if seperate epi/ only_seq=bp=false --> features added to seq encoding
                 # extract featuers/epi window from sequence enconding 
                 X_train = extract_features(X_train, self.encoded_length)
@@ -431,7 +439,7 @@ class run_models:
         if not self.init:
             raise RuntimeError("Trying to predict with a model without a setup - please re run the code and use setup_runner function")
         if self.ml_type == "DEEP":
-            if self.if_seperate_epi or (not (self.if_only_seq or self.if_bp)):
+            if self.if_seperate_epi or (not (self.if_only_seq or self.if_bp)) or self.additional_flanking_sequence_features>0:
                 X_test = extract_features(X_test,self.encoded_length)
             y_pos_scores_probs = model.predict(X_test,verbose = 2,batch_size=self.hyper_params['batch_size'])
         else :
