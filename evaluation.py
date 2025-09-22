@@ -4,8 +4,10 @@ import pickle
 
 import os
 from evaluation_utilities import *
-from file_utilities import find_target_files
+from file_utilities import find_target_files, find_target_folders
+from utilities import extract_scores_labels_indexes_from_files
 from k_groups_utilities import get_partition_information
+from plotting import plot_pr,plot_roc
 #from plotting import plot_ensemeble_preformance,plot_ensemble_performance_mean_std,plot_roc, plot_correlation, plot_pr, plot_n_rank, plot_last_tp, plot_subplots
 from ml_statistics import get_only_seq_vs_group_ensmbels_stats, get_mean_std_from_ensmbel_results
 
@@ -337,7 +339,25 @@ class evaluation():
 
 
 
+def extract_combinatorical_results(ensmbel_combi_path, n_models_in_ensmbel_list):
+    '''Given a list of paths for csv files containing ensembel combinatiorical results
+And given a list with model amounts in each ensmbel to check return a dictionary
+with the results of each combinatorical amount from each ensmbel
+Dict returned : {n_keys : (n_ensmbels,[auroc,auprc,n-rank]) }'''
+    
+    ensmbels_combi_paths = create_paths(ensmbel_combi_path) 
 
+    # Create a dictinoary of 2d np arrays. key is number of models in the ensmbel and value is the results
+    all_n_models = {n_models: np.zeros(shape=(len(ensmbels_combi_paths),3)) for n_models in n_models_in_ensmbel_list}
+    
+    for idx,ensmbel in enumerate(ensmbels_combi_paths):
+        results = np.genfromtxt(ensmbel, delimiter=',') # read file
+        for n_models in n_models_in_ensmbel_list:
+            # n_models is the row number first row is header
+            n_results = results[n_models,:3] # 3 columns - auroc,auprc,n-rank/ pearson_r, spearman_r, mse
+            all_n_models[n_models][idx] = n_results 
+
+    return all_n_models
 
 def plot_evalutions_for_multiple_models(  task, output_path = None, plot_title = None, results = None,
                                          scores_dictionary = None, information=None, return_metrics = False):
@@ -445,7 +465,99 @@ def get_metrics_by_task(task):
         raise RuntimeError(f"Task: {task} is not supported")
 
 
+def plot_roc_pr_for_ensmble_by_paths(score_paths, titles, output_path, plot_title, legend_title = None,axes=None):
+    '''This function plots multiple rocs and pr curves togther for multiple models.
+    It iterates the score paths given in the score paths list and plots the roc/pr curve for each model.
+    The titles list should contain the title for each model.
+    Args:
+    1. score_paths - list of paths to the scores files.
+    2. titles - list of titles for each model.
+    3. output_path - path to save the plot.
+    4. plot_title - title for the plot.
+    -----------
+    Returns: None
+    Example: 
+    ### Test on LAZARATO
+    scores_path = ["/localdata/alon/ML_results/Change-seq/vivo-silico/CNN/Ensemble/Only_sequence/7_partition/7_partition_50/Scores/ensemble_1.csv",
+                    "/localdata/alon/ML_results/Hendel/vivo-silico/test_on_changeseq/6_intersect/all_6/Scores/ensemble_1.csv",
+                    "/localdata/alon/ML_results/Hendel_Changeseq/vivo-silico/test_on_changeseq/6_intersecting/all_6/Scores/ensemble_1.csv"]
+    ### Test on HENDEL
+    scores_path = ["/localdata/alon/ML_results/Change-seq/vivo-silico/CNN/Ensemble/Only_sequence/test_on_hendel/6_intersect/all_6/Scores/ensemble_1.csv",
+    "/localdata/alon/ML_results/Hendel/vivo-silico/Performance-increasing-OTSs-gRNAs/11_group/1-2-3-4-5-6-7-8-9-10-11_partition/1-2-3-4-5-6-7-8-9-10-11_partition_50/Scores/ensemble_1.csv",
+    "/localdata/alon/ML_results/Hendel_Changeseq/vivo-silico/test_on_hendel/6_intersecting/all_6/Scores/ensemble_1.csv"]
+    titles = ["L","H","H + L"]
 
+    
+    plot_roc_pr_for_ensmble_by_paths(scores_path,titles,"/home/dsi/lubosha/Off-Target-data-proccessing/Plots/Hendel_vs_Change-seq","Models_6_intersect")'''
+    if len(score_paths) != len(titles):
+        raise ValueError("The amount of score paths should be equal to the amount of titles")
+    if axes is not None:
+        if len(axes) != 2:
+            raise ValueError("If axes are given, there should be 2 axes - one for roc and one for pr")
+    fprs = []
+    tprs = []
+    aucs = []
+    percs = []
+    auprcs = []
+    recalls = []
+    for test_path in score_paths:
+        y_scores, y_test, indexes = extract_scores_labels_indexes_from_files([test_path])
+        y_scores = np.mean(y_scores, axis = 0)
+        fpr, tpr, tresholds = roc_curve(y_test, y_scores)
+        precision, recall, thresholds = precision_recall_curve(y_test, y_scores)
+        fprs.append(fpr)
+        tprs.append(tpr)
+        aucs.append(auc(fpr, tpr))
+        percs.append(precision)
+        recalls.append(recall)
+        auprcs.append((average_precision_score(y_test, y_scores),np.sum(y_test[y_test > 0]) / len(y_test)))
+    plot_pr(recall_list=recalls,precision_list=percs,auprcs=auprcs,model_names=titles,
+            output_path=output_path,general_title=f'{plot_title}_pr',legend_title=legend_title,ax=axes[0] if axes is not None else None)
+
+    plot_roc(fprs,tprs,aucs,titles,output_path,f'{plot_title}_roc',legend_title=legend_title,ax=axes[1] if axes is not None else None)
+    
+
+def get_group_dict(base_path, n_models_in_ensmbel):
+            
+    group_dict = {}
+    folders_names = os.listdir(base_path)
+    folder_paths = create_paths(base_path)
+    for data_group,data_folder in zip(folders_names,folder_paths):
+        
+    
+        group_paths = find_target_folders(data_folder,["Combi"])
+        group_paths.sort() # sort by partition number
+        group_paths = [os.path.join(path,"Combi") for path in group_paths] # Add Combi folder to each path
+        partition_num = len(group_paths)
+        # set array for the values - auroc,auprc,n-rank for each partition in the group
+        values_arr = np.zeros(shape=(partition_num,3)) 
+        for partition,path in enumerate(group_paths):
+            values_arr[partition] = extract_combinatorical_results(path,[n_models_in_ensmbel])[n_models_in_ensmbel]
+        data_group = data_group.replace("group","") # Remove the group notation
+        data_group = data_group.replace("_"," ") # Remove the underscore notation
+        data_group = float(data_group) # convert to float
+        group_dict[data_group] = values_arr.mean(axis=0),values_arr.std(axis=0)  
+    group_dict = dict(sorted(group_dict.items()))
+    return group_dict
+
+def get_roc_pr_values(group_dict):
+        y_vals = [value[0]  for value in group_dict.values()] 
+        y_stds = [value[1] for value in group_dict.values()]
+        roc_vals = [val[0] for val in y_vals]
+        roc_stds = [val[0] for val in y_stds]
+        prc_vals = [val[1] for val in y_vals]
+        prc_stds = [val[1] for val in y_stds]
+        return [prc_vals,roc_vals],[prc_stds,roc_stds]
+        
+def get_x_vals(path, sgrnas, otss):
+    x_ranges = pd.read_csv(path)
+    if sgrnas:
+        x_vals =  list(zip(x_ranges["min"], x_ranges["max"]))
+        x_vals = [f"{val[0]}-{val[1]}" for val in x_vals[:-1]] + [x_vals[-1][0]]
+    elif otss:
+        active_sites = np.sum(x_ranges['Positives'].values[:-1])
+        x_vals = [int((i+1)*0.1*active_sites) for i in range(10)]
+    return x_vals
 ### METRICS HELPER FUNCTIONS ###
 def get_percision_baseline(y_test):
     '''
