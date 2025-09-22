@@ -1,7 +1,7 @@
 # Thesis branch:
 This branch has additional scripts to run the figures obtained in the Thesis.
 `unzip Thesis_data.zip`
-run `python thesis_plot.py`
+run `python thesis_plots.py`
 In the folder Plots/Thesis additional 4 figures will be output.
 
 
