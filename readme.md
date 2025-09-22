@@ -1,3 +1,10 @@
+# Thesis branch:
+This branch has additional scripts to run the figures obtained in the Thesis.
+`unzip Thesis_data.zip`
+run `python thesis_plot.py`
+In the folder Plots/Thesis additional 4 figures will be output.
+
+
 # EpiCRISPROff
 
 We present EpiCRISPROff, a tool designed to predict CRISPR/Cas9 off-target cleavage probabilty by incorporating epigenetic  marks. EpiCRISPROff is based on the CRISPR-Bulge model: a GRU-embedded sequence processing followed by binary vector of epigenetic marks and multi-layered perceptron consisting of fully connected layers with 128 and 64 neurons, terminating in a final neuron that outputs off-target probabilty based on the CRISPR-Bulge model. The input includes a pair of sgRNA sequence and off-target sequence of 23/24nt length and eight possible epigenetic markers (chromatin accessibility and seven histone modifications: H3K4me1, H3K4me3, H3K9me3, H3K27me3, H3K36me3, H3K9ac, and H3K27ac). 
