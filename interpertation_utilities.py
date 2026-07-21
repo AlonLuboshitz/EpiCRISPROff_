@@ -93,10 +93,10 @@ def get_data(data_path, features = None):
                                               sequence_coding_type=2,if_bulges=True,return_otss=True, exclude_ontarget=True)
     return x,y,guides,otss
 
-def filter_data_for_interpertation(x_background, y,  sgrna_otss, 
+def filter_data_for_interpretation(x_background, y,  sgrna_otss, 
                         specific_indices = None, number_of_points = 200):
     '''
-    Sample a subset of the data for interpertation.
+    Sample a subset of the data for interpretation.
     Args:
         x_background (array): all ENCODED gRNA-OT pairs of a sgRNA.
         y (array): labels of the pairs.
