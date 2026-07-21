@@ -9,7 +9,7 @@ from file_utilities import create_folder
 from features_and_model_utilities import get_feature_name
 #from plotting import plot_subplots, sub_plot_shap_beeswarn, sub_plot_shap_bar_plot
 from train_and_test_utilities import keep_intersect_guides_indices
-from interpertation_utilities import *
+from interpretation_utilities import *
 from features_engineering import extract_features
 #from plotting_utilities import return_colormap
 import seaborn as sns
@@ -88,7 +88,7 @@ def run_shap_by_epi_partition(model_path, background_data_path, output_path, exp
         sg_x_background = x_explain[idx]
         sg_y = y[idx]
         sg_otss = otss_dict[guide]
-        sg_x_selected, sgrna_otss = filter_data_for_interpertation(sg_x_background, sg_y, sg_otss, number_of_points=num_of_points)
+        sg_x_selected, sgrna_otss = filter_data_for_interpretation(sg_x_background, sg_y, sg_otss, number_of_points=num_of_points)
         seq_data,epi_data = extract_features(sg_x_selected,600)
         points = len(sg_x_selected)
         for i_data,(m_basline, epi) in enumerate(zip(seq_data,epi_data)): # update m_baseline in each iteration
@@ -245,7 +245,7 @@ def run_shap(model_path, background_data_path, explainer_type, output_path, expl
         sg_x_background = x_explain[idx]
         sg_y = y[idx]
         sg_otss = otss_dict[sgrna]
-        sg_x_selected, sgrna_otss = filter_data_for_interpertation(sg_x_background, sg_y, sg_otss, number_of_points=num_of_points)
+        sg_x_selected, sgrna_otss = filter_data_for_interpretation(sg_x_background, sg_y, sg_otss, number_of_points=num_of_points)
         whole_selected.append(sg_x_selected)
         # NOTE: Background set to the whole data
         print(f'shap vals for {sgrna}')

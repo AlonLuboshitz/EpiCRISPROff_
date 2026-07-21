@@ -34,7 +34,7 @@ class File_management:
         self.set_paths = False
         if job:
             self.job = job.lower()
-            if self.job == 'interpertation':
+            if self.job == 'interpretation':
                 return
         else:
             raise Exception("Job type not set")
